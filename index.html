@@ -24,6 +24,7 @@
       border-bottom: 2px solid #ccc;
       padding-bottom: 15px;
       margin-bottom: 20px;
+      margin-top: 60px;
     }
 
     .profile-img {
@@ -84,21 +85,51 @@
       font-size: 0.9rem;
       line-height: 1.4;
     }
+    .pre-header-message{
+      width: 96%;
+      height: 3em;
+      border: 2px solid grey;
+      background-color: #ccc;
+      border-radius: 7px;
+      text-align: center;
+      position: fixed;
+      margin-right: 5px;
+      margin-left: 5px;
+    }
+    .phm-text{
+      font-weight: bolder;
+      color: #000;
+    }
   </style>
 </head>
 <body>
+  <div class="pre-header-message">
+    <p class="phm-text">
+      Tread carefully lost child, this site is still in development.
+    </p>
+  </div>
   <header>
     <img class="profile-img" src="profile.jpg" alt="Profile Image" />
     <div class="header-text">
       <div class="tag-div">
         <h1 style="margin-right: 30px;">Abraham .M</h1>
-        <img class="platform-card" src="Groupbandcampdodger.png" alt="Bandcamp">
-        <img class="platform-card" src="Groupgithub.png" alt="GitHub">
-        <img class="platform-card" src="Groupinstagram.png" alt="Instagram">
-        <img class="platform-card" src="Groupsoundcloud.png" alt="SoundCloud">
-        <img class="platform-card" src="Groupyoutube.png" alt="Youtube">
+        <a href="https://subdeep.bandcamp.com">
+          <img class="platform-card" src="Groupbandcampdodger.png" alt="Bandcamp">
+        </a>
+        <a href="https://github.com/abraham-ny">
+          <img class="platform-card" src="Groupgithub.png" alt="GitHub">
+        </a>
+        <a href="https://instagram.com/abraham.dll">
+          <img class="platform-card" src="Groupinstagram.png" alt="Instagram">
+        </a>
+        <a href="https://soundcloud.com/abraham-moruri">
+          <img class="platform-card" src="Groupsoundcloud.png" alt="SoundCloud">
+        </a>
+        <a href="https://youtube.com/@sourceforger">
+          <img class="platform-card" src="Groupyoutube.png" alt="Youtube">
+        </a>
       </div>
-      <p>/* Breathing life into ideas */</p>
+      <p>/* Carbon Based Lifeform(s) */</p>
       <div class="tag-div">
             <p class="tag htag">Java</p>
             <p class="tag htag">JavaFX</p>
@@ -108,18 +139,18 @@
             <p class="tag htag">HTML/CSS/JS</p>
             <p class="tag htag">Python</p>
             <p class="tag htag">Firebase</p>
-            <p class="tag htag">Vue</p>
-            <p class="tag htag">NodeJS</p>
+            <p class="tag htag">WinForms</p>
+            <p class="tag htag">FL-Studio</p>
             <p class="tag htag">Data Science</p>
       </div>
       <u style="margin-top: 10px;">Interests</u>
       <ul>
         <li>Artificial Intelligence, Neural networks, LLMs</li>
-        <li>Cryptocurrency, Meme Coins, Forex</li>
-        <li>Browsers, Browser Engines & Renderers (PRESTO, V8, Blink, Caracan, Trident, Gecko etc.), The Chromium Project.</li>
-        <li>Operating systems & how to make a GUI Os, Multitasking etc</li>
-        <li>Music, Synths, DAWs (FL Studio), VST Plugins</li>
-        <li>Older devices, J2ME (Nostalgia, Good Games, How did games ship at &LT;23KB?), Analog CRT TV's (What kind of software do they run?)</li>
+        <li>Cryptocurrency, Meme Coins, Forex, Video Games</li>
+        <li>Browsers, Browser Engines & Renderers (PRESTO, V8, Blink, Trident, Gecko etc.), The Chromium Project.</li>
+        <li>Diesel engines</li>
+        <li>Music Production, Synths, DAWs, VSTs</li>
+        <li>Older devices, J2ME (Nostalgia), Analog Devices, Frutiger Aero/Aqua and more recently Apple Liquid Glass</li>
       </ul>
     </div>
   </header>
@@ -131,8 +162,8 @@
   </div>
 
   <div id="ovv" class="tab-content">
-    <h2><i>Who am I?</i></h2>
-    <p>[this.name] writes code and makes music.</p>
+    <h2><i>tinkering...</i></h2>
+    <p>.- -... .-. .- .... .- -- </p>
   </div>
   <div id="programming" class="tab-content" style="display:none;">
     <h2>Code {}</h2>
@@ -180,6 +211,48 @@
       <li>
         <div class="li-container">
           <div class="tag-div">
+            <p class="li-title">Feedbacktool</p>
+            <p class="tag">REST</p>
+            <p class="tag">C#</p>
+            <p class="tag">WPF</p>
+            <p class="tag">dotNET</p>
+            <p class="tag">DevTools</p>
+          </div>
+          <p class="li-content">A update and feedback utility allowing developers to focus on their products and leave update and feedback logic to this tool.
+            Simply bundle with your release and call it passing cmd-line arguments <tt>feedbacktool -{feedback|update} -url {url} -user {feedback username} </tt>. Check the project page for
+              more details.
+          </p>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">Android Stock SDK Apps</p>
+            <p class="tag">no-libraries</p>
+            <p class="tag">Java</p>
+            <p class="tag">no-lambdas</p>
+            <p class="tag">series</p>
+            <p class="tag">GUI</p>
+            <p class="tag">POC</p>
+          </div>
+          <p class="li-content">A series of apps made using only "traditional" android API without appcompat or modern libraries showcasing how modern or unique GUIs can be recreated in smaller binaries (apk)
+            and faster lightweight runtimes instead of icluding an entire library which increases massively the apk size and affects performance.
+          </p>
+          <u>Projects under this series</u>
+          <ul>
+            <li>@Mentions, #hashtags and URL formatting</li>
+            <li>SoundCloud Waveform</li>
+            <li>Custom Tabs</li>
+            <li>Before/After ImageView - Image Compare</li>
+            <li>Reels View - Vertical Swipe Videos</li>
+            <li>Custom Snackbar</li>
+            <li>Bottom Navigation</li>
+          </ul>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
             <p class="li-title">ISP (WiFi Company) Website</p>
             <p class="tag">Closed Source</p>
             <p class="tag">JavaScript</p>
@@ -188,6 +261,20 @@
             <p class="tag">Bootstrap</p>
           </div>
           <p class="li-content">Worked as a junior web developer for an iSP to improve their website and SEO</p>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">VideoFLOCK</p>
+            <p class="tag">csharp</p>
+            <p class="tag">dotNET</p>
+            <p class="tag">FFMPEG</p>
+            <p class="tag">Music</p>
+            <p class="tag">NetEase</p>
+            <p class="tag">NCMDecrypter</p>
+          </div>
+          <p class="li-content">A free and open-source tool that 'bulk converts audio to video. Also has a NCM Decrypter.</p>
        </div>
       </li>
       <li>
@@ -207,7 +294,7 @@
         <div class="li-container">
           <div class="tag-div">
             <p class="li-title">OpenUpscaler</p>
-            <p class="tag">Open-Source</p>
+            <p class="tag">Discontinued</p>
             <p class="tag">C#</p>
             <p class="tag">.Net</p>
             <p class="tag">Visual Studio</p>
@@ -252,12 +339,37 @@
           </p>
        </div>
       </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">Echoes</p>
+            <p class="tag">Music-Player</p>
+            <p class="tag">dotNET</p>
+            <p class="tag">C#</p>
+            <p class="tag">fork</p>
+            <p class="tag">Un4seen-BASS.dll</p>
+            <p class="tag">WinForms</p>
+          </div>
+          <p class="li-content">An updated fork of an abandoned/discontinued music player project with unique features. The player uses BASS Engine for output and winforms customized GUI.</p>
+       </div>
+      </li>
     </ul>
     ... and more, just check out my GitHub
   </div>
   <div id="overview" class="tab-content" style="display:none;">
-    <h2>Overview</h2>
-    <p>This section provides an overview of my background and passions.</p>
+    <h2>.flac</h2>
+    <p>Music is such a big deal to me. I also make my own music (House, HipHop/Trap, Ambient, Downtempo, DeepTech House)...mostly as a hobby.</p>
+    <p>Some of my favorites</p>
+    <ul>
+      <li>Simon Doty</li>
+      <li>Eyeronik</li>
+      <li>Carbon Based Lifeforms</li>
+      <li>Costa Mee</li>
+      <li>BeeBar Just Bee U</li>
+      <li>JazzBee /*not jazz music*/</li>
+      <li><a href="https://youtube.com/@Transposed">Transposed</a></li>
+      <li>And most of furture house, Deep House and progressive/melodic house</li>
+    </ul>
   </div>
 
   <script>
