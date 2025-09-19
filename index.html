@@ -121,6 +121,7 @@
                 <p>This site is currently under active redevelopment. Performance, reliability, and compatibility improvements are being implemented while preserving the classic look and behavior. Proceed to the legacy interface (index-old.html) if you need the previous experience.</p>
             </div>
             <footer style="text-align: right">
+                <button onclick="location.href='index-new.html'">Preview rc</button>
                 <button onclick="location.href='index-old.html'">Proceed to legacy site</button>
             </footer>
         </div>
@@ -165,6 +166,8 @@
             function onPointerDown(e) {
                 // Only primary button
                 if (e.pointerType === 'mouse' && e.button !== 0) return;
+                // Ignore drags started on the title-bar controls (buttons, tooltips, etc.)
+                if (e.target.closest && e.target.closest('.title-bar-controls')) return;
                 const rect = win.getBoundingClientRect();
 
                 // ensure absolute positioning with current screen coords
@@ -179,11 +182,20 @@
 
                 dragging = true;
                 win.classList.add('dragging');
-                title.setPointerCapture(e.pointerId);
+                try { if (title.setPointerCapture) title.setPointerCapture(e.pointerId); } catch(_) {}
                 window.addEventListener('pointermove', onPointerMove);
                 window.addEventListener('pointerup', onPointerUp);
+                window.addEventListener('pointercancel', onPointerUp);
                 e.preventDefault();
             }
+
+            // fallback for browsers without pointer events
+            title.addEventListener('mousedown', function (e) {
+                if (e.button !== 0) return;
+                if (e.target.closest && e.target.closest('.title-bar-controls')) return;
+                // synthesize a pointer-like event object for reuse
+                onPointerDown({ pointerType: 'mouse', button: 0, clientX: e.clientX, clientY: e.clientY, pointerId: 1, preventDefault() { e.preventDefault(); } });
+            });
 
             function onPointerMove(e) {
                 if (!dragging) return;
@@ -206,11 +218,10 @@
                 if (!dragging) return;
                 dragging = false;
                 win.classList.remove('dragging');
-                try {
-                    title.releasePointerCapture(e.pointerId);
-                } catch (_) { }
+                try { if (title.releasePointerCapture) title.releasePointerCapture(e.pointerId); } catch (_) { }
                 window.removeEventListener('pointermove', onPointerMove);
                 window.removeEventListener('pointerup', onPointerUp);
+                window.removeEventListener('pointercancel', onPointerUp);
             }
 
             title.addEventListener('pointerdown', onPointerDown);
@@ -235,22 +246,24 @@
                 // initialize accessibility state
                 tooltip.setAttribute('aria-hidden', tooltip.hasAttribute('hidden') ? 'true' : 'false');
                 controls.forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+                let hideTimer = null;
 
                 function showTooltip() {
                     tooltip.removeAttribute('hidden');
                     tooltip.setAttribute('aria-hidden', 'false');
                     controls.forEach(b => b.setAttribute('aria-expanded', 'true'));
+                    // auto-hide after 3.5s
+                    clearTimeout(hideTimer);
+                    hideTimer = setTimeout(hideTooltip, 3500);
                 }
-
                 function hideTooltip() {
                     tooltip.setAttribute('hidden', '');
                     tooltip.setAttribute('aria-hidden', 'true');
                     controls.forEach(b => b.setAttribute('aria-expanded', 'false'));
+                    clearTimeout(hideTimer);
                 }
-
                 function toggleTooltip() {
-                    if (tooltip.hasAttribute('hidden')) showTooltip();
-                    else hideTooltip();
+                    if (tooltip.hasAttribute('hidden')) showTooltip(); else hideTooltip();
                 }
 
                 controls.forEach(btn => {
@@ -258,6 +271,12 @@
                         ev.stopPropagation();
                         toggleTooltip();
                     });
+                });
+
+                // allow clicking the tooltip itself to hide it
+                tooltip.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    hideTooltip();
                 });
 
                 // hide when clicking outside or pressing Escape
