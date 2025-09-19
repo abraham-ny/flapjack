@@ -18,9 +18,8 @@
 		/* desktop area */
 		.desktop {
 			min-height:100vh;
-			display:flex;
-			align-items:center;
-			justify-content:center;
+			/* allow absolute-positioned window to be placed inside; keep padding for edges */
+			position:relative;
 			padding:28px;
 			box-sizing:border-box;
 		}
@@ -34,7 +33,18 @@
 			border-radius:8px;
 			overflow:hidden;
 			box-shadow: 0 18px 48px rgba(0,0,0,.45);
+			/* make window movable: absolute inside .desktop and initially centered */
+			position:absolute;
+			left:50%;
+			top:50%;
+			transform: translate(-50%,-50%);
+			touch-action: none; /* help pointer handling */
 		}
+
+		/* dragging UI cues */
+		.title-bar { cursor: grab; user-select:none; }
+		.app-window.dragging { cursor: grabbing; }
+		.app-window.dragging .title-bar { cursor:grabbing; }
 
 		/* left system panel (avatar + nav) */
 		.system-panel {
@@ -260,7 +270,13 @@
 						helpBalloon.setAttribute('hidden','');
 					}
 				});
+				// hide when clicking outside
 				document.addEventListener('click', () => helpBalloon.setAttribute('hidden',''));
+				// also hide when the balloon itself is clicked
+				helpBalloon.addEventListener('click', (ev) => {
+					ev.stopPropagation();
+					helpBalloon.setAttribute('hidden','');
+				});
 				document.addEventListener('keyup', (e) => { if (e.key === 'Escape') helpBalloon.setAttribute('hidden',''); });
 			}
 
@@ -276,6 +292,80 @@
 					if (btn) btn.click();
 				}
 			});
+
+			// Draggable window implementation using pointer events (title-bar as handle)
+			(function enableWindowDrag() {
+				const app = document.querySelector('.app-window');
+				const desktop = document.querySelector('.desktop');
+				const handle = app && app.querySelector('.title-bar');
+				if (!app || !desktop || !handle) return;
+
+				let dragging = false;
+				let startX = 0, startY = 0; // pointer start
+				let startLeft = 0, startTop = 0; // window start (relative to desktop)
+
+				function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
+
+				handle.addEventListener('pointerdown', (ev) => {
+					ev.preventDefault();
+					handle.setPointerCapture(ev.pointerId);
+					// compute initial positions
+					const deskRect = desktop.getBoundingClientRect();
+					const winRect = app.getBoundingClientRect();
+					startX = ev.clientX;
+					startY = ev.clientY;
+					// convert to coordinates relative to desktop
+					startLeft = winRect.left - deskRect.left;
+					startTop = winRect.top - deskRect.top;
+
+					// remove centering transform if present so we can move by left/top
+					app.style.transform = app.style.transform === '' ? 'none' : app.style.transform;
+					if (app.style.transform && app.style.transform.includes('translate(-50%,-50%)')) {
+						app.style.transform = 'none';
+					}
+					// ensure left/top are set in px (if not already)
+					app.style.left = (startLeft) + 'px';
+					app.style.top = (startTop) + 'px';
+
+					dragging = true;
+					app.classList.add('dragging');
+				});
+
+				handle.addEventListener('pointermove', (ev) => {
+					if (!dragging) return;
+					const deskRect = desktop.getBoundingClientRect();
+					const winRect = app.getBoundingClientRect();
+					const dx = ev.clientX - startX;
+					const dy = ev.clientY - startY;
+					// compute new position (relative to desktop)
+					let newLeft = startLeft + dx;
+					let newTop = startTop + dy;
+					// clamp within desktop bounds (leave a small margin)
+					const margin = 8;
+					const maxLeft = deskRect.width - winRect.width - margin;
+					const maxTop = deskRect.height - winRect.height - margin;
+					newLeft = clamp(newLeft, margin - winRect.width * 0, maxLeft);
+					newTop = clamp(newTop, margin - winRect.height * 0, maxTop);
+					app.style.left = Math.round(newLeft) + 'px';
+					app.style.top = Math.round(newTop) + 'px';
+				});
+
+				function endDrag(ev) {
+					if (!dragging) return;
+					dragging = false;
+					app.classList.remove('dragging');
+					try { handle.releasePointerCapture && handle.releasePointerCapture(ev.pointerId); } catch (e) {}
+				}
+				handle.addEventListener('pointerup', endDrag);
+				handle.addEventListener('pointercancel', endDrag);
+
+				// double-click on title bar recenters the window
+				handle.addEventListener('dblclick', () => {
+					app.style.left = '50%';
+					app.style.top = '50%';
+					app.style.transform = 'translate(-50%,-50%)';
+				});
+			})();
 		})();
 	</script>
 </body>
