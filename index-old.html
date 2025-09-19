@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Abraham .M</title>
+  <link rel="stylesheet" type="text/css" href="style.css"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Special+Elite&display=swap');
+
+    body {
+      font-family: 'Special Elite', monospace;
+      font-size: 0.85rem;
+      background-color: #fdf6e3;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      margin-top: 60px;
+    }
+
+    .profile-img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border: 2px solid #333;
+      border-radius: 5px;
+    }
+
+    header .header-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    header .header-text h1 {
+      margin: 0;
+      font-size: 1.5rem;
+      letter-spacing: 2px;
+    }
+
+    header .header-text p {
+      margin: 5px 0 0 0;
+      max-width: 600px;
+      line-height: 1.3;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 8px 16px;
+      border: 1px solid #333;
+      border-bottom: none;
+      background-color: #fdf6e3;
+      cursor: pointer;
+      font-weight: bold;
+      letter-spacing: 1px;
+      user-select: none;
+      border-radius: 5px 5px 0 0;
+      transition: background-color 0.3s ease;
+    }
+
+    .tab.active {
+      background-color: #333;
+      color: #fdf6e3;
+    }
+
+    .tab-content {
+      border: 1px solid #333;
+      padding: 15px;
+      border-radius: 0 5px 5px 5px;
+      max-width: 700px;
+      background-color: #fff;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .pre-header-message{
+      width: 96%;
+      height: 3em;
+      border: 2px solid grey;
+      background-color: #ccc;
+      border-radius: 7px;
+      text-align: center;
+      position: fixed;
+      margin-right: 5px;
+      margin-left: 5px;
+    }
+    .phm-text{
+      font-weight: bolder;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="pre-header-message">
+    <p class="phm-text">
+      Tread carefully lost child, this site is still in development.
+    </p>
+  </div>
+  <header>
+    <img class="profile-img" src="profile.jpg" alt="Profile Image" />
+    <div class="header-text">
+      <div class="tag-div">
+        <h1 style="margin-right: 30px;">Abraham .M</h1>
+        <a href="https://subdeep.bandcamp.com">
+          <img class="platform-card" src="Groupbandcampdodger.png" alt="Bandcamp">
+        </a>
+        <a href="https://github.com/abraham-ny">
+          <img class="platform-card" src="Groupgithub.png" alt="GitHub">
+        </a>
+        <a href="https://instagram.com/abraham.dll">
+          <img class="platform-card" src="Groupinstagram.png" alt="Instagram">
+        </a>
+        <a href="https://soundcloud.com/abraham-moruri">
+          <img class="platform-card" src="Groupsoundcloud.png" alt="SoundCloud">
+        </a>
+        <a href="https://youtube.com/@sourceforger">
+          <img class="platform-card" src="Groupyoutube.png" alt="Youtube">
+        </a>
+      </div>
+      <p>/* Carbon Based Lifeform(s) */</p>
+      <div class="tag-div">
+            <p class="tag htag">Java</p>
+            <p class="tag htag">JavaFX</p>
+            <p class="tag htag">Go</p>
+            <p class="tag htag">DotNet</p>
+            <p class="tag htag">C#</p>
+            <p class="tag htag">HTML/CSS/JS</p>
+            <p class="tag htag">Python</p>
+            <p class="tag htag">Firebase</p>
+            <p class="tag htag">WinForms</p>
+            <p class="tag htag">FL-Studio</p>
+            <p class="tag htag">Data Science</p>
+      </div>
+      <u style="margin-top: 10px;">Interests</u>
+      <ul>
+        <li>Artificial Intelligence, Neural networks, LLMs</li>
+        <li>Cryptocurrency, Meme Coins, Forex, Video Games</li>
+        <li>Browsers, Browser Engines & Renderers (PRESTO, V8, Blink, Trident, Gecko etc.), The Chromium Project.</li>
+        <li>Diesel engines</li>
+        <li>Music Production, Synths, DAWs, VSTs</li>
+        <li>Older devices, J2ME (Nostalgia), Analog Devices, Frutiger Aero/Aqua and more recently Apple Liquid Glass</li>
+      </ul>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="ovv">Overview</div>
+    <div class="tab" data-tab="programming">Programming</div>
+    <div class="tab" data-tab="overview">Music</div>
+  </div>
+
+  <div id="ovv" class="tab-content">
+    <h2><i>tinkering...</i></h2>
+    <p>.- -... .-. .- .... .- -- </p>
+  </div>
+  <div id="programming" class="tab-content" style="display:none;">
+    <h2>Code {}</h2>
+    <p>I've had the priviledge to contribute to some projects, both open and closed-source.</p>
+    <p>Here's some of my work:</p>
+    <h3>Side Projects</h3>
+    <ul class="se-ul">
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">File-Studio</p>
+            <p class="tag">Open-Source</p>
+            <p class="tag">JavaFX</p>
+            <p class="tag">FXML</p>
+          </div>
+          <p class="li-content">An open source tool that makes complex file operations such as bulk renaming, file organizing, compression, media upscale easier.</p>
+        </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">SourceForge Project Tracker</p>
+            <p class="tag">Partially Open-Source</p>
+            <p class="tag">Java</p>
+            <p class="tag">XML</p>
+            <p class="tag">REST</p>
+            <p class="tag">Android</p>
+          </div>
+          <p class="li-content">An app that makes it easier for developers and interested parties to get real-time stats on source forge projects using the public REST APi (number of downloads etc.)</p>
+        </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">MiniLink URL Shortener</p>
+            <p class="tag">Proprietary</p>
+            <p class="tag">JavaScript</p>
+            <p class="tag">HTML</p>
+            <p class="tag">Firebase</p>
+            <p class="tag">Full-Stack</p>
+          </div>
+          <p class="li-content">A minimal (no login required), free URL/Link shortening service that uses firebase to store and retrieve links.</p>
+        </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">Feedbacktool</p>
+            <p class="tag">REST</p>
+            <p class="tag">C#</p>
+            <p class="tag">WPF</p>
+            <p class="tag">dotNET</p>
+            <p class="tag">DevTools</p>
+          </div>
+          <p class="li-content">A update and feedback utility allowing developers to focus on their products and leave update and feedback logic to this tool.
+            Simply bundle with your release and call it passing cmd-line arguments <tt>feedbacktool -{feedback|update} -url {url} -user {feedback username} </tt>. Check the project page for
+              more details.
+          </p>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">Android Stock SDK Apps</p>
+            <p class="tag">no-libraries</p>
+            <p class="tag">Java</p>
+            <p class="tag">no-lambdas</p>
+            <p class="tag">series</p>
+            <p class="tag">GUI</p>
+            <p class="tag">POC</p>
+          </div>
+          <p class="li-content">A series of apps made using only "traditional" android API without appcompat or modern libraries showcasing how modern or unique GUIs can be recreated in smaller binaries (apk)
+            and faster lightweight runtimes instead of icluding an entire library which increases massively the apk size and affects performance.
+          </p>
+          <u>Projects under this series</u>
+          <ul>
+            <li>@Mentions, #hashtags and URL formatting</li>
+            <li>SoundCloud Waveform</li>
+            <li>Custom Tabs</li>
+            <li>Before/After ImageView - Image Compare</li>
+            <li>Reels View - Vertical Swipe Videos</li>
+            <li>Custom Snackbar</li>
+            <li>Bottom Navigation</li>
+          </ul>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">ISP (WiFi Company) Website</p>
+            <p class="tag">Closed Source</p>
+            <p class="tag">JavaScript</p>
+            <p class="tag">HTML</p>
+            <p class="tag">NDA</p>
+            <p class="tag">Bootstrap</p>
+          </div>
+          <p class="li-content">Worked as a junior web developer for an iSP to improve their website and SEO</p>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">VideoFLOCK</p>
+            <p class="tag">csharp</p>
+            <p class="tag">dotNET</p>
+            <p class="tag">FFMPEG</p>
+            <p class="tag">Music</p>
+            <p class="tag">NetEase</p>
+            <p class="tag">NCMDecrypter</p>
+          </div>
+          <p class="li-content">A free and open-source tool that 'bulk converts audio to video. Also has a NCM Decrypter.</p>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">Frame Extractor</p>
+            <p class="tag">Open-Source</p>
+            <p class="tag">C#</p>
+            <p class="tag">.Net</p>
+            <p class="tag">OpenCV</p>
+            <p class="tag">Video Processing</p>
+          </div>
+          <p class="li-content">It extracts frames from videos and saves them to images. It works regardless of video duration or metadata...anything FFMPEG supports out of the box. Uses multithreading to avoid unresponsive UI and lag.</p>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">OpenUpscaler</p>
+            <p class="tag">Discontinued</p>
+            <p class="tag">C#</p>
+            <p class="tag">.Net</p>
+            <p class="tag">Visual Studio</p>
+            <p class="tag">OpenCV</p>
+            <p class="tag">Image Processing</p>
+            <p class="tag">Ai</p>
+          </div>
+          <p class="li-content">An application that upscales images to whatever resolution and format the user wants...and works offline too.</p>
+       </div>
+      </li>
+       <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">Phone Number Generator</p>
+            <p class="tag">Open-Source</p>
+            <p class="tag">Python</p>
+            <p class="tag">Regex</p>
+          </div>
+          <p class="li-content">Developed a phone number generator that accepts provider name as input and generates numbers based on regex (each provider uses a different pattern)</p>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">Custom FilePicker Dialog</p>
+            <p class="tag">Proprietary</p>
+            <p class="tag">.Net Framework</p>
+            <p class="tag">C#</p>
+            <p class="tag">UX</p>
+          </div>
+          <p class="li-content">The default windows file picker (open, save, dir etc.) works fine but has some UX issues. This custom picker that can be embedded as an exe and distributed aims to solve those issues.
+            <h4>What's different:</h4>
+            <ul>
+              <li>A context-aware "recently used by this app" list that makes it easy for users to select files they previously selected instead of digging through folders.</li>
+              <li>Opens in the last dir used by the specific app that launches it</li>
+              <li>Customizable theme colors</li>
+              <li>Customizable dark/light mode</li>
+              <li>If a user manually types in a folder name that does not exist, the built-in picker just says "Does not exist". This picker presents a 'confirm' popup asking the user if they'd like to create the non-existing folder or not.</li>
+              <li>Upload From mobile: allows users to upload stuff to the picker from mobile</li>
+              <li>User settings: Users can modify it to their liking and override developer parameters</li>
+            </ul>
+          </p>
+       </div>
+      </li>
+      <li>
+        <div class="li-container">
+          <div class="tag-div">
+            <p class="li-title">Echoes</p>
+            <p class="tag">Music-Player</p>
+            <p class="tag">dotNET</p>
+            <p class="tag">C#</p>
+            <p class="tag">fork</p>
+            <p class="tag">Un4seen-BASS.dll</p>
+            <p class="tag">WinForms</p>
+          </div>
+          <p class="li-content">An updated fork of an abandoned/discontinued music player project with unique features. The player uses BASS Engine for output and winforms customized GUI.</p>
+       </div>
+      </li>
+    </ul>
+    ... and more, just check out my GitHub
+  </div>
+  <div id="overview" class="tab-content" style="display:none;">
+    <h2>.flac</h2>
+    <p>Music is such a big deal to me. I also make my own music (House, HipHop/Trap, Ambient, Downtempo, DeepTech House)...mostly as a hobby.</p>
+    <p>Some of my favorites</p>
+    <ul>
+      <li>Simon Doty</li>
+      <li>Eyeronik</li>
+      <li>Carbon Based Lifeforms</li>
+      <li>Costa Mee</li>
+      <li>BeeBar Just Bee U</li>
+      <li>JazzBee /*not jazz music*/</li>
+      <li><a href="https://youtube.com/@Transposed">Transposed</a></li>
+      <li>And most of furture house, Deep House and progressive/melodic house</li>
+    </ul>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        contents.forEach(content => {
+          content.style.display = content.id === tab.dataset.tab ? 'block' : 'none';
+        });
+      });
+    });
+  </script>
+</body>
+</html>
