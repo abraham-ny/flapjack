@@ -1,0 +1,93 @@
+body {
+    background-clip: content-box;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Dragging helpers */
+.window.glass.active {
+    /* no change to flow on page when dragged */
+    transition: none;
+    /* responsive width */
+    max-width: min(90%, 600px);
+    width: auto;
+}
+
+.window.glass.active .title-bar {
+    cursor: grab;
+    /* indicate draggable */
+    touch-action: none;
+    /* allow pointer events for touch */
+    -webkit-user-select: none;
+    -user-select: none;
+}
+
+.window.glass.active.dragging .title-bar {
+    cursor: grabbing;
+}
+
+/* ensure the app background fills viewport so centering uses the full page */
+html,
+body {
+    height: 100%;
+}
+
+.background {
+    min-height: 100vh;
+}
+
+/* make window text feel native / non-selectable */
+.window.glass.active,
+.window.glass.active * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* allow interaction with potential form controls if added later */
+.window.glass.active input,
+.window.glass.active textarea,
+.window.glass.active select {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+/* custom context menu (app-like) */
+#custom-context-menu {
+    position: absolute;
+    z-index: 9999;
+    min-width: 180px;
+    background: #ffffff;
+    color: #111;
+    border: 1px solid rgba(0, 0, 0, .12);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+    padding: 4px 0;
+    font-size: 14px;
+    display: none;
+    border-radius: 4px;
+    user-select: none;
+}
+
+#custom-context-menu .menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#custom-context-menu .menu-item:hover {
+    background: #efefef;
+}
+
+#custom-context-menu .menu-sep {
+    height: 1px;
+    background: #eee;
+    margin: 6px 0;
+}
+
+#custom-context-menu[aria-hidden="true"] {
+    display: none;
+}

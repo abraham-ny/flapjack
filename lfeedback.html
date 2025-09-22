@@ -1,0 +1,188 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback</title>
+    <link rel="stylesheet" href="https://unpkg.com/7.css">
+    <link rel="stylesheet" href="native.css">
+    <script src="native.js" defer></script>
+</head>
+
+<body background="3080240.jpg">
+    <div class="background">
+        <div class="window glass active" style="--w7-w-bg: #805ba5;">
+            <div class="title-bar">
+                <div class="title-bar-text">Feedback</div>
+                <div class="title-bar-controls">
+                    <button aria-label="Help" aria-describedby="balloon-password"></button>
+                    <button aria-label="Minimize" aria-describedby="balloon-password"></button>
+                    <button aria-label="Maximize" disabled aria-describedby="balloon-password"></button>
+                    <button aria-label="Close" aria-describedby="balloon-password"></button>
+                    <div role="tooltip" id="balloon-password" hidden>not available currently | v0.0.1</div>
+                </div>
+            </div>
+
+            <div class="window-body has-space">
+                <select id="ufeedtype" aria-label="Feedback Type" style="width: 100%; margin-bottom: 1em;">
+                    <option selected>Feedback</option>
+                    <option>Bug Report</option>
+                    <option>Feature Request</option>
+                    <option>Message</option>
+                    <option>Other</option>
+                </select>
+                <div class="group" style="width: 100%; margin-bottom: 1em;">
+                    <label for="uname">User Name or Email (optional)</label>
+                    <input id="uname" type="name|email">
+                </div>
+                <div class="group" style="width: 100%; margin-bottom: 1em;">
+                    <label for="ucontact">Other ways to get back to you (optional)</label>
+                    <input id="ucontact" type="text">
+                </div>
+                <div class="group" style="width: 100%; margin-bottom: 1em;">
+                    <label for="umsg">Feedback</label>
+                    <textarea id="umsg" rows="8" maxlength="5000" placeholder="psst* You can drag this window"
+                        style="resize: none;"></textarea>
+                    <div id="umsg-remaining"
+                        style="font-size: 0.9em; color: #555; text-align: right;">5000 characters remaining
+                    </div>
+                </div>
+                <p>Thank you for using my services/products, feel free and be honest with your feedback.</p>
+            </div>
+            <footer style="text-align: right">
+                <button onclick="location.href='index-new.html'">Cancel</button>
+                <button onclick="location.href='index-old.html'">Submit</button>
+            </footer>
+        </div>
+    </div>
+    <!-- custom app-like context menu -->
+    <div id="custom-context-menu" class="can-hover" role="menu" aria-hidden="true">
+        <div class="menu-item" data-action="help" role="menuitem">Help</div>
+        <div class="menu-item" data-action="minimize" role="menuitem">Minimize</div>
+        <div class="menu-item" data-action="maximize" role="menuitem">Toggle Maximize</div>
+        <div class="menu-item" data-action="close" role="menuitem">Close</div>
+        <div class="menu-sep" role="separator"></div>
+        <div class="menu-item" data-action="legacy" role="menuitem">Open Legacy Interface</div>
+    </div>
+
+    <!--<ul role="menu" id="icustom-menu" class="can-hover" style="width: 200px">
+        <li role="menuitem" tabindex="0" aria-haspopup="true">View</li>
+        <li role="menuitem" tabindex="0" aria-haspopup="true">
+            Sort by
+            <ul role="menu">
+                <li role="menuitem"><a href="#menu">Name</a></li>
+                <li role="menuitem"><a href="#menu">Size</a></li>
+                <li role="menuitem"><a href="#menu">Item type</a></li>
+                <li role="menuitem"><a href="#menu">Date modified</a></li>
+            </ul>
+        </li>
+        <li role="menuitem" class="has-divider"><a href="#menu">Refresh</a></li>
+        <li role="menuitem" aria-disabled="true"><a href="#menu">Paste</a></li>
+        <li role="menuitem" aria-disabled="true" class="has-divider">
+            <a href="#menu">Paste shortcut</a>
+        </li>
+        <li role="menuitem">
+            <img src="https://img.icons8.com/color/18/000000/monitor--v1.png">
+            <a href="#menu">Screen resolution</a>
+        </li>
+        <li role="menuitem">
+            <img src="https://img.icons8.com/color/18/000000/virtual-machine2.png">
+            <a href="#menu">Gadgets</a>
+        </li>
+        <li role="menuitem">
+            <img src="https://img.icons8.com/color/18/000000/remote-desktop.png">
+            <a href="#menu">Personalize</a>
+        </li>
+    </ul>-->
+    <script>
+        // new combined script: handle remaining count + URL params (source, reason, user, message)
+
+        const textarea = document.getElementById('umsg');
+        const remaining = document.getElementById('umsg-remaining');
+        const maxLen = Number(textarea.maxLength) || 5000;
+
+        function updateRemaining() {
+            const left = Math.max(0, maxLen - textarea.value.length);
+            remaining.textContent = left + ' characters remaining';
+        }
+
+        // attach listeners
+        textarea.addEventListener('input', updateRemaining);
+        textarea.addEventListener('paste', function () {
+            // wait for paste to complete
+            setTimeout(updateRemaining, 0);
+        });
+
+        // parse URL params and apply them if present
+        (function applyUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const source = params.get('source') || '';
+            const reason = params.get('reason');
+            const user = params.get('user') || '';
+            const message = params.get('message') || '';
+
+            // set title bar text if source provided
+            const titleEl = document.querySelector('.title-bar-text');
+            if (source) {
+                titleEl.textContent = `${source} - Feedback`;
+            }
+
+            // set user name/email if provided
+            const uname = document.getElementById('uname');
+            if (user) {
+                try { uname.value = user; } catch (e) { /* ignore */ }
+            }
+
+            // set select option based on reason (case-insensitive match against option text)
+            const select = document.getElementById('ufeedtype');
+            if (reason) {
+                const reasonNorm = reason.trim().toLowerCase();
+                let matched = false;
+
+                for (let i = 0; i < select.options.length; i++) {
+                    const opt = select.options[i];
+                    const text = (opt.value || opt.text || '').toString().trim().toLowerCase();
+                    if (text === reasonNorm) {
+                        select.selectedIndex = i;
+                        matched = true;
+                        break;
+                    }
+                }
+
+                // try partial match if no exact match
+                if (!matched) {
+                    for (let i = 0; i < select.options.length; i++) {
+                        const opt = select.options[i];
+                        const text = (opt.value || opt.text || '').toString().trim().toLowerCase();
+                        if (reasonNorm && text.includes(reasonNorm)) {
+                            select.selectedIndex = i;
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+
+                // If reason param was present and we matched something, prevent changing it
+                if (matched) {
+                    select.disabled = true;
+                    select.setAttribute('aria-disabled', 'true');
+                }
+            }
+
+            // set message/textarea content if provided (truncate to maxlength)
+            if (message) {
+                let msg = message;
+                if (msg.length > maxLen) msg = msg.slice(0, maxLen);
+                textarea.value = msg;
+            }
+
+            // final update of remaining count
+            updateRemaining();
+        })();
+
+        // ensure initial remaining shown even with no params
+        updateRemaining();
+    </script>
+</body>
+
+</html>
