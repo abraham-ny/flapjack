@@ -7,53 +7,56 @@
     <link rel="stylesheet" href="https://unpkg.com/7.css">
     <link rel="stylesheet" href="native.css">
     <script src="native.js" defer></script>
+    <script src="aero-loader.js"></script>
 </head>
 
 <body background="3080240.jpg">
     <div class="background">
-        <div class="window glass active" style="--w7-w-bg: #805ba5;">
-            <div class="title-bar">
-                <div class="title-bar-text">Feedback</div>
-                <div class="title-bar-controls">
-                    <button aria-label="Help" aria-describedby="balloon-password"></button>
-                    <button aria-label="Minimize" aria-describedby="balloon-password"></button>
-                    <button aria-label="Maximize" disabled aria-describedby="balloon-password"></button>
-                    <button aria-label="Close" aria-describedby="balloon-password"></button>
-                    <div role="tooltip" id="balloon-password" hidden>not available currently | v0.0.1</div>
-                </div>
-            </div>
-
-            <div class="window-body has-space">
-                <select id="ufeedtype" aria-label="Feedback Type" style="width: 100%; margin-bottom: 1em;">
-                    <option selected>Feedback</option>
-                    <option>Bug Report</option>
-                    <option>Feature Request</option>
-                    <option>Message</option>
-                    <option>Other</option>
-                </select>
-                <div class="group" style="width: 100%; margin-bottom: 1em;">
-                    <label for="uname">User Name or Email (optional)</label>
-                    <input id="uname" type="name|email">
-                </div>
-                <div class="group" style="width: 100%; margin-bottom: 1em;">
-                    <label for="ucontact">Other ways to get back to you (optional)</label>
-                    <input id="ucontact" type="text">
-                </div>
-                <div class="group" style="width: 100%; margin-bottom: 1em;">
-                    <label for="umsg">Feedback</label>
-                    <textarea id="umsg" rows="8" maxlength="5000" placeholder="psst* You can drag this window"
-                        style="resize: none;"></textarea>
-                    <div id="umsg-remaining"
-                        style="font-size: 0.9em; color: #555; text-align: right;">5000 characters remaining
+        <form id="feedbackForm" class="mx-auto">
+            <div class="window glass active" style="--w7-w-bg: #805ba5;">
+                <div class="title-bar">
+                    <div class="title-bar-text">Feedback</div>
+                    <div class="title-bar-controls">
+                        <button aria-label="Help" aria-describedby="balloon-password"></button>
+                        <button aria-label="Minimize" aria-describedby="balloon-password"></button>
+                        <button aria-label="Maximize" disabled aria-describedby="balloon-password"></button>
+                        <button aria-label="Close" aria-describedby="balloon-password"></button>
+                        <div role="tooltip" id="balloon-password" hidden>not available currently | v0.0.1</div>
                     </div>
                 </div>
-                <p>Thank you for using my services/products, feel free and be honest with your feedback.</p>
+                <div class="window-body has-space">
+                    <select id="ufeedtype" name="type" aria-label="Feedback Type" style="width: 100%; margin-bottom: 1em;">
+                        <option selected>Feedback</option>
+                        <option>Bug Report</option>
+                        <option>Feature Request</option>
+                        <option>Message</option>
+                        <option>Other</option>
+                    </select>
+                    <input type="hidden" id="srchidden" name="source" value="PortfolioVintage Website">
+                    <div class="group" style="width: 100%; margin-bottom: 1em;">
+                        <label for="uname">User Name or Email (optional)</label>
+                        <input id="uname" name="email" type="name|email">
+                    </div>
+                    <div class="group" style="width: 100%; margin-bottom: 1em;">
+                        <label for="ucontact">Other ways to get back to you (optional)</label>
+                        <input id="ucontact" name="name" type="text">
+                    </div>
+                    <div class="group" style="width: 100%; margin-bottom: 1em;">
+                        <label for="umsg">Feedback</label>
+                        <textarea id="umsg" name="feedback" rows="8" maxlength="5000" placeholder="psst* You can drag this window"
+                            style="resize: none;"></textarea>
+                        <div id="umsg-remaining" style="font-size: 0.9em; color: #555; text-align: right;">5000
+                            characters remaining
+                        </div>
+                    </div>
+                    <p id="formMessage">Thank you for using my services/products, feel free and be honest with your feedback.</p>
+                </div>
+                <footer style="text-align: right">
+                    <button onclick="location.href='index-new.html'">Cancel</button>
+                    <button type="submit" >Submit</button>
+                </footer>
             </div>
-            <footer style="text-align: right">
-                <button onclick="location.href='index-new.html'">Cancel</button>
-                <button onclick="location.href='index-old.html'">Submit</button>
-            </footer>
-        </div>
+        </form>
     </div>
     <!-- custom app-like context menu -->
     <div id="custom-context-menu" class="can-hover" role="menu" aria-hidden="true">
@@ -122,9 +125,12 @@
             const message = params.get('message') || '';
 
             // set title bar text if source provided
+            const srchidden = document.getElementById('srchidden');
             const titleEl = document.querySelector('.title-bar-text');
             if (source) {
+                srchidden.value = source;
                 titleEl.textContent = `${source} - Feedback`;
+                console.log(`Set source to: ${srchidden.value}`);
             }
 
             // set user name/email if provided
