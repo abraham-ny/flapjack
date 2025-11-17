@@ -1,395 +1,698 @@
+<!doctype html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WWAIN/T — Development Preview (v0.0.1)</title>
-    <link rel="stylesheet" href="https://unpkg.com/7.css">
-    <style>
-        body {
-            background-clip: content-box;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-        }
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<title>POR7FOLIO :: Abraham .M</title>
+	<link rel="stylesheet" href="https://unpkg.com/7.css">
+	<style>
+		/* page background / full-bleed */
+		html,
+		body {
+			height: 100%;
+			margin: 0;
+		}
 
-        /* Dragging helpers */
-        .window.glass.active {
-            /* no change to flow on page when dragged */
-            transition: none;
-            /* responsive width */
-            max-width: min(90%, 600px);
-            width: auto;
-        }
+		* {
+			font-size: clamp(14px, 1em, 100px); /* min 14px, preferred 1em, max 100px */
+			text-shadow:
+				-1px -1px 0 rgb(128, 128, 128),
+				1px -1px 0 rgb(134, 134, 134),
+				-1px 1px 0 rgb(132, 132, 132),
+				1px 1px 0 rgb(149, 149, 149);
+		}
 
-        .window.glass.active .title-bar {
-            cursor: grab;
-            /* indicate draggable */
-            touch-action: none;
-            /* allow pointer events for touch */
-            -webkit-user-select: none;
-            -user-select: none;
-        }
+		body {
+			background: center / cover no-repeat url('3080240.jpg');
+			font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+		}
 
-        .window.glass.active.dragging .title-bar {
-            cursor: grabbing;
-        }
+		.taskbar-img {
+			position: fixed;
+			bottom: 10;
+			left: 50%;
+			transform: translateX(-50%);
+			width: auto;
+			height: 100px;
+		}
 
-        /* ensure the app background fills viewport so centering uses the full page */
-        html,
-        body {
-            height: 100%;
-        }
+		#taskbar {
+			position: fixed;
+			bottom: 0;
+			left: 50%;
+			transform: translateX(-50%);
+			height: 60px;
+			/* default size */
+			cursor: grab;
+			transition: transform 0.15s ease, height 0.15s ease;
+			z-index: 9999;
+		}
 
-        .background {
-            min-height: 100vh;
-        }
+		#taskbar:hover {
+			height: 80px;
+			/* grows on hover */
+			transform: translateX(-50%) scale(1.15);
+		}
 
-        /* make window text feel native / non-selectable */
-        .window.glass.active,
-        .window.glass.active * {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
+		#taskbar.dragging {
+			cursor: grabbing;
+			height: 90px;
+			/* even larger while dragging */
+			transform: scale(1.25);
+			/* center translation removed during drag */
+		}
 
-        /* allow interaction with potential form controls if added later */
-        .window.glass.active input,
-        .window.glass.active textarea,
-        .window.glass.active select {
-            -webkit-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-            user-select: text;
-        }
+		.imgpop {
+			transition: transform 0.15s ease, height 0.15s ease;
+		}
 
-        /* custom context menu (app-like) */
-        #custom-context-menu {
-            position: absolute;
-            z-index: 9999;
-            min-width: 180px;
-            background: #ffffff;
-            color: #111;
-            border: 1px solid rgba(0, 0, 0, .12);
-            box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
-            padding: 4px 0;
-            font-size: 14px;
-            display: none;
-            border-radius: 4px;
-            user-select: none;
-        }
+		.imgpop:hover {
+			height: 80px;
+			/* grows on hover */
+			transform: translateX(-5%) scale(1.15);
+		}
 
-        #custom-context-menu .menu-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
+		/* desktop area */
+		.desktop {
+			min-height: 100vh;
+			/* allow absolute-positioned window to be placed inside; keep padding for edges */
+			position: relative;
+			padding: 28px;
+			box-sizing: border-box;
+		}
 
-        #custom-context-menu .menu-item:hover {
-            background: #efefef;
-        }
+		/* main window */
+		.app-window {
+			display: flex;
+			flex-direction: row;
+			width: min(1100px, 96%);
+			max-height: calc(100vh - 56px);
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 18px 48px rgba(0, 0, 0, .45);
+			/* make window movable: absolute inside .desktop and initially centered */
+			position: absolute;
+			left: 50%;
+			top: 50%;
+			transform: translate(-50%, -50%);
+			touch-action: none;
+			/* help pointer handling */
+			z-index: 20;
+			/* keep above background on small screens */
+		}
 
-        #custom-context-menu .menu-sep {
-            height: 1px;
-            background: #eee;
-            margin: 6px 0;
-        }
+		/* dragging UI cues */
+		.title-bar {
+			cursor: grab;
+			user-select: none;
+		}
 
-        #custom-context-menu[aria-hidden="true"] {
-            display: none;
-        }
-    </style>
+		.app-window.dragging {
+			cursor: grabbing;
+		}
+
+		.app-window.dragging .title-bar {
+			cursor: grabbing;
+		}
+
+		/* left system panel (avatar + nav) */
+		.system-panel {
+			width: 320px;
+			min-width: 240px;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+			border-right: 1px solid rgba(0, 0, 0, .06);
+			padding: 18px;
+			box-sizing: border-box;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			backdrop-filter: blur(6px);
+		}
+
+		.avatar {
+			width: 84px;
+			height: 84px;
+			border-radius: 10px;
+			background: linear-gradient(135deg, #fff, #eee);
+			box-shadow: inset 0 -4px 12px rgba(0, 0, 0, .08);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			font-weight: 700;
+			color: #333;
+			font-size: 20px;
+			margin-bottom: 6px;
+		}
+
+		.user-meta {
+			color: rgba(255, 255, 255, .95);
+		}
+
+		.user-meta h3 {
+			margin: 0 0 4px 0;
+			font-size: 1.05rem;
+			letter-spacing: .6px;
+		}
+
+		.user-meta p {
+			margin: 0;
+			font-size: .86rem;
+			opacity: .85;
+		}
+
+		.nav {
+			margin-top: 8px;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+		}
+
+		.nav button {
+			text-align: left;
+			padding: 10px 12px;
+			border-radius: 6px;
+			background: transparent;
+			color: rgba(255, 255, 255, .95);
+			border: 1px solid transparent;
+			cursor: pointer;
+			font-size: 0.95rem;
+		}
+
+		.nav button:hover {
+			background: rgba(255, 255, 255, .04);
+		}
+
+		.nav button.active {
+			background: linear-gradient(90deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .03));
+			border-color: rgba(255, 255, 255, .06);
+		}
+
+		.footer-mini {
+			margin-top: auto;
+			font-size: 0.78rem;
+			color: rgba(255, 255, 255, .7);
+		}
+
+		/* content area */
+		.content-panel {
+			flex: 1;
+			padding: 16px 20px;
+			box-sizing: border-box;
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+			backdrop-filter: blur(4px);
+			color: #fff;
+			overflow: auto;
+		}
+
+		.title-bar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 12px;
+			padding: 8px 12px;
+			background: linear-gradient(180deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.08));
+			color: #fff;
+			font-weight: 600;
+			font-size: 0.95rem;
+			border-bottom: 1px solid rgba(255, 255, 255, .03);
+		}
+
+		.title-left {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+
+		.title-controls button {
+			background: transparent;
+			border: 0;
+			width: 34px;
+			height: 28px;
+			border-radius: 4px;
+			cursor: pointer;
+		}
+
+		.title-controls button[disabled] {
+			opacity: .45;
+			cursor: default;
+		}
+
+		.section {
+			padding: 12px 6px;
+		}
+
+		.section h2 {
+			margin: 0 0 8px 0;
+			font-weight: 700;
+			color: #fff;
+		}
+
+		.section p {
+			margin: 0 0 12px 0;
+			color: rgba(255, 255, 255, .9);
+			line-height: 1.45;
+		}
+
+		/* projects grid */
+		.projects {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+			gap: 12px;
+		}
+
+		.project {
+			background: linear-gradient(180deg, rgba(255, 255, 255, .02), rgba(255, 255, 255, .01));
+			border: 1px solid rgba(255, 255, 255, .04);
+			padding: 10px;
+			border-radius: 8px;
+		}
+
+		.project h3 {
+			margin: 0 0 6px 0;
+			font-size: 1rem;
+		}
+
+		.project p {
+			font-size: 0.88rem;
+			color: rgba(255, 255, 255, .85);
+			margin: 0;
+		}
+
+		/* responsive */
+		@media (max-width:820px) {
+
+			/* make the custom window behave like a full-screen app on small devices */
+			.app-window {
+				position: fixed;
+				left: 0;
+				top: 0;
+				transform: none;
+				width: 100%;
+				height: 100vh;
+				max-height: none;
+				border-radius: 0;
+				display: flex;
+				flex-direction: column;
+				overflow: hidden;
+			}
+
+			/* system panel becomes a compact top bar; allow horizontal nav scrolling */
+			.system-panel {
+				width: 100%;
+				display: flex;
+				flex-direction: row;
+				gap: 12px;
+				padding: 10px 12px;
+				align-items: center;
+				overflow-x: auto;
+				box-sizing: border-box;
+			}
+
+			.nav {
+				flex-direction: row;
+				gap: 8px;
+			}
+
+			.nav button {
+				white-space: nowrap;
+				flex: 0 0 auto;
+			}
+
+			.avatar {
+				width: 56px;
+				height: 56px;
+				margin-bottom: 0;
+				flex: 0 0 auto;
+			}
+
+			/* content should fill remaining space and be scrollable */
+			.content-panel {
+				padding: 12px;
+				flex: 1 1 auto;
+				overflow: auto;
+				-webkit-overflow-scrolling: touch;
+			}
+
+			/* soften dragging cursor on small screens (touch interaction) */
+			.title-bar {
+				cursor: default;
+			}
+		}
+
+		/* subtle non-selectable chrome feel */
+		.app-window,
+		.title-bar,
+		.system-panel {
+			-webkit-user-select: none;
+			user-select: none;
+		}
+	</style>
 </head>
 
-<body background="3080240.jpg">
+<body>
+	<img src="9_objectsstack.png" class="taskbar-img" id="taskbar" alt="taskbar">
+
+	<div class="desktop">
+		<!-- main app window using 7.css window classes for visual compatibility -->
+		<div class="window glass active app-window" role="application" aria-label="90r7FOLi0">
+			<!-- left: system panel -->
+			<div class="system-panel">
+				<div style="display:flex;flex-direction:column;">
+					<div class="avatar">AM</div>
+					<div class="user-meta">
+						<h3>Abraham M.</h3>
+						<p>Computer Programmer · Music Producer</p>
+					</div>
+				</div>
+
+				<nav class="nav" aria-label="Primary">
+					<button class="active" data-section="about">About</button>
+					<button data-section="projects">Projects</button>
+					<button data-section="resume">Resume</button>
+					<button data-section="contact">Contact</button>
+				</nav>
+
+				<div class="footer-mini">CustomRetro(R)</div>
+			</div>
+
+			<!-- right: content panel with title bar -->
+			<div class="content-panel">
+				<div class="title-bar" role="toolbar">
+					<div class="title-left">
+						<span style="font-weight:700">7</span>
+						<span style="opacity:.8; font-size:.86rem; margin-left:8px;">hold to drag</span>
+					</div>
+					<div class="title-controls">
+						<button aria-label="Help" id="btn-help" aria-describedby="help-balloon">?</button>
+						<button aria-label="Legacy" id="btn-legacy">⤺</button>
+					</div>
+				</div>
+
+				<!-- help balloon
+				<div id="help-balloon" role="tooltip" hidden style="margin:10px 0 6px 0; padding:8px 10px; background:rgba(0,0,0,.4); display:inline-block; border-radius:6px;">
+					<span style="color:#fff; font-size:.9rem;">This interface is a development preview. Use "Legacy" to visit the previous site.</span>
+				</div> -->
+
+				<!-- dynamic content sections -->
+				<section id="about" class="section">
+					<h2>About</h2>
+					<p>I'm Abraham, a software engineer focused on creating scalable, reliable, maintainable systems. I
+						care about performance, accessibility, and pragmatic engineering. Below are a few highlights and
+						recent projects, click Projects for details.</p>
+					<ul style="margin-top:12px;">
+						<li>Languages and Frameworks: Java, C#, Web, Go, PHP, JS, SCSS, Python, Qt</li>
+						<li>Systems: tooling, build optimization, small-scale infra, CI/CD, Cloud Compute.</li>
+						<li>Design: pixel-aware interfaces, performance systems, lightweight threading to reduce CPU
+							load.</li>
+					</ul>
+					<a href="https://github.com/abraham-ny">
+						<img src="gh1.png" class="imgpop" alt="GitHub Stats"
+							style="margin-top:12px; height: 60px; width: 160px;" />
+					</a>
+					<a href="https://subdeep.bandcamp.com">
+						<img src="4_objectsbc.png" class="imgpop"
+							style="margin-top:12px; height: 60px; width: 160px;" /></a>
+					<a href="https://youtube.com/@crossmediabar">
+						<img src="4_objectsyt.png" class="imgpop" alt="Youtube"
+							style="margin-top:12px; height: 60px; width: 160px;" /></a>
+					<a href="https://instagram.com/abraham.dll">
+						<img src="4_objectsIG.png" class="imgpop"
+							style="margin-top:12px; height: 60px; width: 160px;" /></a>
+					<a href="https://soundcloud.com/suburbanmusic0">
+						<img src="sc.png" class="imgpop" style="margin-top:12px; height: 60px; width: 160px;" /></a>
+				</section>
+
+				<section id="projects" class="section" hidden>
+					<h2>Projects</h2>
+					<div class="projects" aria-live="polite">
+						<div class="project">
+							<h3>Portfolio Vintage UI</h3>
+							<p>Experiment recreating desktop chrome and UX with modern web standards. Draggable windows,
+								responsive layout, and accessible controls.</p>
+						</div>
+						<div class="project">
+							<h3>File-Studio</h3>
+							<p>A Java(fx) application for handling bulk or complex file operations such as organizing,
+								bulk-renaming, tree cloning, duplicate scanning and more. Available on Windows, Linux
+								and Android</p>
+						</div>
+						<div class="project">
+							<h3>Performance Toolkit</h3>
+							<p>Collection of build-time and runtime optimizations tailored for SPAs and content-heavy
+								sites.</p>
+						</div>
+						<div class="project">
+							<h3>EL(R)C Service charter site</h3>
+							<p>A full-featured website with downloadable assets, dynamic grids and a free feedback
+								service that writes to a spreadsheet.</p>
+						</div>
+						<div class="project">
+							<h3>echoes</h3>
+							<p>A complete windows music player written in C#, powered by the BASS engine. Has a custom
+								WinForms GUI</p>
+						</div>
+						<div class="project">
+							<h3>Sepia</h3>
+							<p>A browser extension that applies a nostalgic color filter and font to web pages
+								(including images), available on Firfox (non-chromium) and Chromium browsers (Chrome,
+								Edge, Opera, Brave etc)</p>
+						</div>
+						<div class="project">
+							<h3>Frames</h3>
+							<p>A video frames extractor app for windows (WPF UI) that saves frames as images for later
+								use or bulk upload.</p>
+						</div>
+						<div class="project">
+							<h3>feedbacktool</h3>
+							<p>A tiny, portable feedback and updates utility used by developers to avoid the overhead
+								work of implementing a feedback page or updater. The tool is usually bundled with a
+								release then called at runtime as a GUI or CLI session via --flags.</p>
+						</div>
+						<div class="project">
+							<h3>VideoFLOCK</h3>
+							<p>A tool to convert audio files into high quality lossless videos with a still image (upto
+								8k) in bulk or single files. Also has a feature to decrypt NCM (NetEase) music files
+								[NCMDecryptor]</p>
+						</div>
+						<div class="project">
+							<h3>MiniLink</h3>
+							<p>A simple, free URL Shortener</p>
+						</div>
+						<div class="project">
+							<h3>SourceForge Project Tracker</h3>
+							<p>A mobile app that makes it easy to view your sourceforge projects stats on the go...no
+								login, no ads.</p>
+						</div>
+						<div class="project">
+							<h3>quizzle</h3>
+							<p>A tiny go cli application to create or answer multichoice tests or gamified learning.</p>
+						</div>
+					</div>
+				</section>
+
+				<section id="resume" class="section" hidden>
+					<h2>Resume</h2>
+					<p>Summary: 6+ years building production web applications, tooling, and developer-focused features.
+						Interested in systems engineering and developer UX.</p>
+					<p style="margin-top:8px;"><strong>Key Skills:</strong> Java, C#, Go, Web, linux, Qt, build systems,
+						performance tuning, UI design.</p>
+				</section>
+
+				<section id="contact" class="section" hidden>
+					<h2>Contact</h2>
+					<p>Use the feedback page to get in touch with me.</p>
+					<p style="margin-top:8px;"><button
+							onclick="location.href='lfeedback.html?reason=message&source=Abraham'">Open Feedback
+							Page</button></p>
+				</section>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// small UI glue: nav switching, help balloon, legacy link
+		(function () {
+
+			const isMobileDevice = /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i
+				.test(navigator.userAgent);
+
+			const isSmallScreen = window.innerWidth < 768;
+
+			if (isMobileDevice || isSmallScreen) {
+				alert("This site looks better on larger screens/devices, please use a PC or Laptop/Tablet next time.");
+			}
+
+			const img = document.getElementById("taskbar");
+
+			let isDragging = false;
+			let offsetX = 0;
+			let offsetY = 0;
+
+			// Start drag
+			img.addEventListener("mousedown", (e) => {
+				isDragging = true;
+				img.classList.add("dragging");
+
+				// store relative click position
+				offsetX = e.clientX - img.getBoundingClientRect().left;
+				offsetY = e.clientY - img.getBoundingClientRect().top;
+
+				// while dragging, remove fixed bottom-center behavior
+				img.style.position = "fixed";
+				img.style.left = img.getBoundingClientRect().left + "px";
+				img.style.top = img.getBoundingClientRect().top + "px";
+			});
+
+			// Drag movement
+			document.addEventListener("mousemove", (e) => {
+				if (!isDragging) return;
+
+				img.style.left = (e.clientX - offsetX) + "px";
+				img.style.top = (e.clientY - offsetY) + "px";
+			});
+
+			// End drag
+			document.addEventListener("mouseup", () => {
+				if (!isDragging) return;
+
+				isDragging = false;
+				img.classList.remove("dragging");
+			});
 
 
-    <div class="background">
-        <div class="window glass active" style="--w7-w-bg: #805ba5;">
-            <div class="title-bar">
-                <div class="title-bar-text">WWAIN/T System :: Development Preview</div>
-                <div class="title-bar-controls">
-                    <button aria-label="Help" aria-describedby="balloon-password"></button>
-                    <button aria-label="Minimize" aria-describedby="balloon-password"></button>
-                    <button aria-label="Maximize" disabled aria-describedby="balloon-password"></button>
-                    <button aria-label="Close" aria-describedby="balloon-password"></button>
-                    <div role="tooltip" id="balloon-password" hidden>not available currently | v0.0.1</div>
-                </div>
-            </div>
-            <div class="window-body has-space">
-                <p>This site is currently under active redevelopment. Performance, reliability, and compatibility improvements are being implemented while preserving the classic look and behavior. Proceed to the legacy interface (index-old.html) if you need the previous experience.</p>
-            </div>
-            <footer style="text-align: right">
-                <button onclick="location.href='index-new.html'">Preview rc</button>
-                <button onclick="location.href='index-old.html'">Proceed to legacy site</button>
-            </footer>
-        </div>
-    </div>
-    <!-- custom app-like context menu -->
-    <div id="custom-context-menu" role="menu" aria-hidden="true">
-        <div class="menu-item" data-action="help" role="menuitem">Help</div>
-        <div class="menu-item" data-action="minimize" role="menuitem">Minimize</div>
-        <div class="menu-item" data-action="maximize" role="menuitem">Toggle Maximize</div>
-        <div class="menu-item" data-action="close" role="menuitem">Close</div>
-        <div class="menu-sep" role="separator"></div>
-        <div class="menu-item" data-action="legacy" role="menuitem">Open Legacy Interface</div>
-    </div>
 
-    <script>
-        // Make the first .window.glass.active draggable by its .title-bar
-        (function () {
-            const win = document.querySelector('.window.glass.active');
-            if (!win) return;
-            const title = win.querySelector('.title-bar');
-            if (!title) return;
+			const navButtons = document.querySelectorAll('.nav button');
+			const sections = Array.from(document.querySelectorAll('.content-panel section'));
+			function showSection(id) {
+				sections.forEach(s => s.id === id ? s.removeAttribute('hidden') : s.setAttribute('hidden', ''));
+				navButtons.forEach(b => b.classList.toggle('active', b.dataset.section === id));
+				// restore scroll to top for selected content
+				const panel = document.querySelector('.content-panel');
+				if (panel) panel.scrollTop = 0;
+			}
+			navButtons.forEach(btn => {
+				btn.addEventListener('click', () => showSection(btn.dataset.section));
+			});
 
-            let dragging = false;
-            let offsetX = 0,
-                offsetY = 0;
-            let userMoved = false; // becomes true if user drags the window
+			// initialize
+			showSection('about');
 
-            function centerWin() {
-                // center only if user hasn't moved it
-                if (userMoved) return;
-                // ensure absolute positioning
-                const rect = win.getBoundingClientRect();
-                win.style.position = 'absolute';
-                const vpW = document.documentElement.clientWidth;
-                const vpH = document.documentElement.clientHeight;
-                const w = rect.width,
-                    h = rect.height;
-                win.style.left = Math.max(0, Math.round((vpW - w) / 2)) + 'px';
-                win.style.top = Math.max(0, Math.round((vpH - h) / 2)) + 'px';
-            }
+			// help balloon toggle
+			const helpBtn = document.getElementById('btn-help');
+			const helpBalloon = document.getElementById('help-balloon');
+			if (helpBtn && helpBalloon) {
+				helpBtn.addEventListener('click', (ev) => {
+					ev.stopPropagation();
+					if (helpBalloon.hasAttribute('hidden')) {
+						helpBalloon.removeAttribute('hidden');
+					} else {
+						helpBalloon.setAttribute('hidden', '');
+					}
+				});
+				// hide when clicking outside
+				document.addEventListener('click', () => helpBalloon.setAttribute('hidden', ''));
+				// also hide when the balloon itself is clicked
+				helpBalloon.addEventListener('click', (ev) => {
+					ev.stopPropagation();
+					helpBalloon.setAttribute('hidden', '');
+				});
+				document.addEventListener('keyup', (e) => { if (e.key === 'Escape') helpBalloon.setAttribute('hidden', ''); });
+			}
 
-            function onPointerDown(e) {
-                // Only primary button
-                if (e.pointerType === 'mouse' && e.button !== 0) return;
-                // Ignore drags started on the title-bar controls (buttons, tooltips, etc.)
-                if (e.target.closest && e.target.closest('.title-bar-controls')) return;
-                const rect = win.getBoundingClientRect();
+			// legacy button
+			const legacyBtn = document.getElementById('btn-legacy');
+			if (legacyBtn) legacyBtn.addEventListener('click', () => location.href = 'index-old.html');
 
-                // ensure absolute positioning with current screen coords
-                if (getComputedStyle(win).position !== 'absolute') {
-                    win.style.position = 'absolute';
-                    win.style.left = rect.left + 'px';
-                    win.style.top = rect.top + 'px';
-                }
+			// small accessibility: allow keyboard nav 1-4
+			document.addEventListener('keyup', (e) => {
+				if (e.key >= '1' && e.key <= '4') {
+					const idx = Number(e.key) - 1;
+					const btn = navButtons[idx];
+					if (btn) btn.click();
+				}
+			});
 
-                offsetX = e.clientX - rect.left;
-                offsetY = e.clientY - rect.top;
+			// Draggable window implementation using pointer events (title-bar as handle)
+			(function enableWindowDrag() {
+				const app = document.querySelector('.app-window');
+				const desktop = document.querySelector('.desktop');
+				const handle = app && app.querySelector('.title-bar');
+				if (!app || !desktop || !handle) return;
 
-                dragging = true;
-                win.classList.add('dragging');
-                try { if (title.setPointerCapture) title.setPointerCapture(e.pointerId); } catch(_) {}
-                window.addEventListener('pointermove', onPointerMove);
-                window.addEventListener('pointerup', onPointerUp);
-                window.addEventListener('pointercancel', onPointerUp);
-                e.preventDefault();
-            }
+				let dragging = false;
+				let startX = 0, startY = 0; // pointer start
+				let startLeft = 0, startTop = 0; // window start (relative to desktop)
 
-            // fallback for browsers without pointer events
-            title.addEventListener('mousedown', function (e) {
-                if (e.button !== 0) return;
-                if (e.target.closest && e.target.closest('.title-bar-controls')) return;
-                // synthesize a pointer-like event object for reuse
-                onPointerDown({ pointerType: 'mouse', button: 0, clientX: e.clientX, clientY: e.clientY, pointerId: 1, preventDefault() { e.preventDefault(); } });
-            });
+				function clamp(v, min, max) { return Math.min(Math.max(v, min), max); }
 
-            function onPointerMove(e) {
-                if (!dragging) return;
-                // when movement happens, mark that user moved the window
-                userMoved = true;
-                const newLeft = e.clientX - offsetX;
-                const newTop = e.clientY - offsetY;
-                // keep within viewport bounds
-                const vpW = document.documentElement.clientWidth;
-                const vpH = document.documentElement.clientHeight;
-                const rect = win.getBoundingClientRect();
-                const w = rect.width,
-                    h = rect.height;
+				handle.addEventListener('pointerdown', (ev) => {
+					// don't start dragging when app is fullscreen on small devices
+					const appStyle = window.getComputedStyle(app);
+					if (appStyle.position === 'fixed' || window.matchMedia('(max-width:820px)').matches) return;
+					ev.preventDefault();
+					handle.setPointerCapture(ev.pointerId);
+					// compute initial positions
+					const deskRect = desktop.getBoundingClientRect();
+					const winRect = app.getBoundingClientRect();
+					startX = ev.clientX;
+					startY = ev.clientY;
+					// convert to coordinates relative to desktop
+					startLeft = winRect.left - deskRect.left;
+					startTop = winRect.top - deskRect.top;
 
-                win.style.left = Math.min(Math.max(0, newLeft), vpW - w) + 'px';
-                win.style.top = Math.min(Math.max(0, newTop), vpH - h) + 'px';
-            }
+					// remove centering transform if present so we can move by left/top
+					app.style.transform = app.style.transform === '' ? 'none' : app.style.transform;
+					if (app.style.transform && app.style.transform.includes('translate(-50%,-50%)')) {
+						app.style.transform = 'none';
+					}
+					// ensure left/top are set in px (if not already)
+					app.style.left = (startLeft) + 'px';
+					app.style.top = (startTop) + 'px';
 
-            function onPointerUp(e) {
-                if (!dragging) return;
-                dragging = false;
-                win.classList.remove('dragging');
-                try { if (title.releasePointerCapture) title.releasePointerCapture(e.pointerId); } catch (_) { }
-                window.removeEventListener('pointermove', onPointerMove);
-                window.removeEventListener('pointerup', onPointerUp);
-                window.removeEventListener('pointercancel', onPointerUp);
-            }
+					dragging = true;
+					app.classList.add('dragging');
+				});
 
-            title.addEventListener('pointerdown', onPointerDown);
+				handle.addEventListener('pointermove', (ev) => {
+					if (!dragging) return;
+					const deskRect = desktop.getBoundingClientRect();
+					const winRect = app.getBoundingClientRect();
+					const dx = ev.clientX - startX;
+					const dy = ev.clientY - startY;
+					// compute new position (relative to desktop)
+					let newLeft = startLeft + dx;
+					let newTop = startTop + dy;
+					// clamp within desktop bounds (leave a small margin)
+					const margin = 8;
+					const maxLeft = deskRect.width - winRect.width - margin;
+					const maxTop = deskRect.height - winRect.height - margin;
+					newLeft = clamp(newLeft, margin - winRect.width * 0, maxLeft);
+					newTop = clamp(newTop, margin - winRect.height * 0, maxTop);
+					app.style.left = Math.round(newLeft) + 'px';
+					app.style.top = Math.round(newTop) + 'px';
+				});
 
-            // center on load
-            window.addEventListener('DOMContentLoaded', centerWin);
-            // also try immediate (in case DOMContentLoaded already fired)
-            if (document.readyState !== 'loading') centerWin();
-            // re-center on resize if user hasn't moved the window
-            window.addEventListener('resize', () => {
-                // small debounce
-                clearTimeout(window.__centerTimeout);
-                window.__centerTimeout = setTimeout(centerWin, 80);
-            });
+				function endDrag(ev) {
+					if (!dragging) return;
+					dragging = false;
+					app.classList.remove('dragging');
+					try { handle.releasePointerCapture && handle.releasePointerCapture(ev.pointerId); } catch (e) { }
+				}
+				handle.addEventListener('pointerup', endDrag);
+				handle.addEventListener('pointercancel', endDrag);
 
-            // --- Tooltip toggle for title-bar controls (balloon-password) ---
-            (function tooltipToggle() {
-                const controls = win.querySelectorAll('.title-bar-controls > button[aria-describedby="balloon-password"]');
-                const tooltip = win.querySelector('#balloon-password');
-                if (!tooltip || controls.length === 0) return;
-
-                // initialize accessibility state
-                tooltip.setAttribute('aria-hidden', tooltip.hasAttribute('hidden') ? 'true' : 'false');
-                controls.forEach(btn => btn.setAttribute('aria-expanded', 'false'));
-                let hideTimer = null;
-
-                function showTooltip() {
-                    tooltip.removeAttribute('hidden');
-                    tooltip.setAttribute('aria-hidden', 'false');
-                    controls.forEach(b => b.setAttribute('aria-expanded', 'true'));
-                    // auto-hide after 3.5s
-                    clearTimeout(hideTimer);
-                    hideTimer = setTimeout(hideTooltip, 3500);
-                }
-                function hideTooltip() {
-                    tooltip.setAttribute('hidden', '');
-                    tooltip.setAttribute('aria-hidden', 'true');
-                    controls.forEach(b => b.setAttribute('aria-expanded', 'false'));
-                    clearTimeout(hideTimer);
-                }
-                function toggleTooltip() {
-                    if (tooltip.hasAttribute('hidden')) showTooltip(); else hideTooltip();
-                }
-
-                controls.forEach(btn => {
-                    btn.addEventListener('click', (ev) => {
-                        ev.stopPropagation();
-                        toggleTooltip();
-                    });
-                });
-
-                // allow clicking the tooltip itself to hide it
-                tooltip.addEventListener('click', (ev) => {
-                    ev.stopPropagation();
-                    hideTooltip();
-                });
-
-                // hide when clicking outside or pressing Escape
-                document.addEventListener('click', () => hideTooltip());
-                document.addEventListener('keyup', (ev) => { if (ev.key === 'Escape') hideTooltip(); });
-            })();
-
-            // --- Custom context menu (disable native menu, show app-like menu) ---
-            (function customContextMenu() {
-                const menu = document.getElementById('custom-context-menu');
-                if (!menu) return;
-
-                function hideMenu() {
-                    menu.setAttribute('aria-hidden', 'true');
-                    menu.style.display = 'none';
-                }
-
-                function showMenuAt(x, y) {
-                    // make visible to measure
-                    menu.style.display = 'block';
-                    menu.removeAttribute('aria-hidden');
-                    const mRect = menu.getBoundingClientRect();
-                    const vpW = document.documentElement.clientWidth;
-                    const vpH = document.documentElement.clientHeight;
-                    // constrain inside viewport
-                    let left = x;
-                    let top = y;
-                    if (left + mRect.width > vpW) left = Math.max(4, vpW - mRect.width - 4);
-                    if (top + mRect.height > vpH) top = Math.max(4, vpH - mRect.height - 4);
-                    menu.style.left = left + 'px';
-                    menu.style.top = top + 'px';
-                }
-
-                // intercept native context menu
-                document.addEventListener('contextmenu', (ev) => {
-                    ev.preventDefault();
-                    // show menu only when clicking in the app surface, otherwise ignore
-                    showMenuAt(ev.clientX, ev.clientY);
-                    ev.stopPropagation();
-                }, { passive: false });
-
-                // menu action handlers
-                menu.addEventListener('click', (ev) => {
-                    const item = ev.target.closest('.menu-item');
-                    if (!item) return;
-                    const action = item.dataset.action;
-                    hideMenu();
-                    switch (action) {
-                        case 'help': {
-                            const tooltip = win.querySelector('#balloon-password');
-                            if (!tooltip) break;
-                            if (tooltip.hasAttribute('hidden')) {
-                                tooltip.removeAttribute('hidden');
-                                tooltip.setAttribute('aria-hidden', 'false');
-                            } else {
-                                tooltip.setAttribute('hidden', '');
-                                tooltip.setAttribute('aria-hidden', 'true');
-                            }
-                            break;
-                        }
-                        case 'minimize':
-                            win.style.display = 'none';
-                            break;
-                        case 'maximize': {
-                            const vpW = document.documentElement.clientWidth;
-                            const vpH = document.documentElement.clientHeight;
-                            if (!win.dataset.maximized) {
-                                const r = win.getBoundingClientRect();
-                                win.dataset.prev = JSON.stringify({
-                                    left: win.style.left || r.left + 'px',
-                                    top: win.style.top || r.top + 'px',
-                                    width: win.style.width || r.width + 'px',
-                                    height: win.style.height || win.style.height || ''
-                                });
-                                win.style.left = '0px';
-                                win.style.top = '0px';
-                                win.style.width = vpW + 'px';
-                                win.style.height = vpH + 'px';
-                                win.dataset.maximized = '1';
-                            } else {
-                                try {
-                                    const prev = JSON.parse(win.dataset.prev || '{}');
-                                    if (prev.left) win.style.left = prev.left;
-                                    if (prev.top) win.style.top = prev.top;
-                                    if (prev.width) win.style.width = prev.width;
-                                    if (prev.height) win.style.height = prev.height;
-                                } catch (e) { /* ignore */ }
-                                delete win.dataset.maximized;
-                            }
-                            break;
-                        }
-                        case 'close':
-                           
-                            if(win.style.display === 'none') {
-                                win.style.display = 'block';
-                            }else{
-                                 win.style.display = 'none';
-                            }
-                            break;
-                        case 'legacy':
-                            location.href = 'index-old.html';
-                            break;
-                    }
-                });
-
-                // hide on outside click / Escape
-                document.addEventListener('click', (ev) => {
-                    if (!ev.target.closest('#custom-context-menu')) hideMenu();
-                });
-                document.addEventListener('keyup', (ev) => { if (ev.key === 'Escape') hideMenu(); });
-            })();
-        })();
-    </script>
+				// double-click on title bar recenters the window
+				handle.addEventListener('dblclick', () => {
+					app.style.left = '50%';
+					app.style.top = '50%';
+					app.style.transform = 'translate(-50%,-50%)';
+				});
+			})();
+		})();
+	</script>
 </body>
 
 </html>
