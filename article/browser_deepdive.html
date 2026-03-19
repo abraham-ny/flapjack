@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inside the Browser: A Deep Dive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=IBM+Plex+Mono:wght@400;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #131318;
+    --surface2: #1a1a22;
+    --border: #2a2a38;
+    --accent: #e8673a;
+    --accent2: #5b8dee;
+    --accent3: #3ae8b2;
+    --text: #e8e4dc;
+    --text-muted: #888899;
+    --text-dim: #555566;
+    --code-bg: #0a0a10;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 18px;
+    line-height: 1.85;
+    overflow-x: hidden;
+  }
+
+  /* ── HEADER ───────────────────────────────────── */
+  header {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 20px;
+    overflow: hidden;
+  }
+
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 40%, rgba(232,103,58,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 80% 60%, rgba(91,141,238,0.10) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 50% 100%, rgba(58,232,178,0.07) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .header-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 28px;
+    opacity: 0.9;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(48px, 8vw, 96px);
+    font-weight: 900;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    max-width: 900px;
+    margin-bottom: 12px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .header-sub {
+    font-family: 'Source Serif 4', serif;
+    font-style: italic;
+    font-size: clamp(16px, 2.5vw, 22px);
+    color: var(--text-muted);
+    max-width: 680px;
+    margin: 20px auto 0;
+    line-height: 1.6;
+  }
+
+  .header-meta {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 48px;
+    letter-spacing: 0.1em;
+  }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-dim);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .scroll-arrow {
+    width: 1px;
+    height: 48px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    animation: scrollpulse 2s ease-in-out infinite;
+  }
+
+  @keyframes scrollpulse {
+    0%, 100% { opacity: 0.3; transform: scaleY(1); }
+    50% { opacity: 1; transform: scaleY(1.2); }
+  }
+
+  /* ── GRID LINES ───────────────────────────────── */
+  .grid-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.03;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* ── TOC ──────────────────────────────────────── */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,13,15,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  nav.toc::-webkit-scrollbar { display: none; }
+
+  nav.toc ul {
+    display: inline-flex;
+    list-style: none;
+    gap: 0;
+    padding: 0;
+  }
+
+  nav.toc li a {
+    display: block;
+    padding: 14px 18px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.2s, border-bottom-color 0.2s;
+    border-bottom: 2px solid transparent;
+  }
+
+  nav.toc li a:hover {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ── LAYOUT ───────────────────────────────────── */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 80px 24px 120px;
+  }
+
+  /* ── SECTIONS ─────────────────────────────────── */
+  section {
+    margin-bottom: 100px;
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    max-width: 60px;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 28px;
+    color: var(--text);
+  }
+
+  h2 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    margin: 40px 0 16px;
+    color: var(--text);
+  }
+
+  p {
+    margin-bottom: 20px;
+    color: #d8d4cc;
+  }
+
+  p:last-child { margin-bottom: 0; }
+
+  strong { color: var(--text); font-weight: 600; }
+
+  a {
+    color: var(--accent2);
+    text-decoration: none;
+    border-bottom: 1px solid rgba(91,141,238,0.3);
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  a:hover {
+    color: #8ab4ff;
+    border-bottom-color: #8ab4ff;
+  }
+
+  /* ── CALLOUT BOXES ────────────────────────────── */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 20px 24px;
+    margin: 32px 0;
+    border-radius: 0 6px 6px 0;
+  }
+
+  .callout.blue { border-left-color: var(--accent2); }
+  .callout.green { border-left-color: var(--accent3); }
+
+  .callout-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+
+  .callout.blue .callout-label { color: var(--accent2); }
+  .callout.green .callout-label { color: var(--accent3); }
+
+  .callout p { margin: 0; font-size: 16px; color: var(--text-muted); }
+
+  /* ── CODE BLOCKS ──────────────────────────────── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 28px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #aab4c8;
+  }
+
+  pre .comment { color: #444466; font-style: italic; }
+  pre .dir { color: var(--accent2); }
+  pre .file { color: var(--accent3); }
+  pre .keyword { color: var(--accent); }
+
+  code {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.85em;
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 3px;
+    color: var(--accent3);
+  }
+
+  /* ── PULL QUOTE ───────────────────────────────── */
+  blockquote {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: clamp(20px, 3vw, 26px);
+    line-height: 1.5;
+    color: var(--text);
+    margin: 44px 0;
+    padding: 0 0 0 28px;
+    border-left: 3px solid var(--accent);
+    position: relative;
+  }
+
+  /* ── COMPARISON TABLE ─────────────────────────── */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+    background: var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 32px 0;
+  }
+
+  .compare-cell {
+    background: var(--surface);
+    padding: 20px 22px;
+  }
+
+  .compare-cell.header {
+    background: var(--surface2);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+
+  .compare-cell p { font-size: 15px; margin-bottom: 8px; }
+  .compare-cell p:last-child { margin-bottom: 0; }
+
+  /* ── HIGHLIGHT STAT ───────────────────────────── */
+  .stat-row {
+    display: flex;
+    gap: 2px;
+    margin: 32px 0;
+  }
+
+  .stat-box {
+    flex: 1;
+    background: var(--surface);
+    border-top: 2px solid var(--accent);
+    padding: 20px;
+    text-align: center;
+  }
+
+  .stat-box.blue { border-top-color: var(--accent2); }
+  .stat-box.green { border-top-color: var(--accent3); }
+
+  .stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--accent);
+    display: block;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-box.blue .stat-number { color: var(--accent2); }
+  .stat-box.green .stat-number { color: var(--accent3); }
+
+  .stat-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* ── DIVIDER ──────────────────────────────────── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin: 60px 0;
+    color: var(--text-dim);
+  }
+
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .divider-glyph {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+  }
+
+  /* ── LINK CARD ────────────────────────────────── */
+  .link-card {
+    display: block;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    text-decoration: none;
+    border-bottom: none;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .link-card::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--accent2);
+  }
+
+  .link-card:hover {
+    border-color: var(--accent2);
+    background: var(--surface2);
+    color: inherit;
+  }
+
+  .link-card-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--accent2);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .link-card-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-family: 'Source Serif 4', serif;
+  }
+
+  /* ── OPERA SPECIAL ────────────────────────────── */
+  .opera-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #cc0f16, #ff3b3b);
+    color: white;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 20px;
+  }
+
+  /* ── FOOTER ───────────────────────────────────── */
+  footer {
+    text-align: center;
+    padding: 60px 20px;
+    border-top: 1px solid var(--border);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+  }
+
+  /* ── RESPONSIVE ───────────────────────────────── */
+  @media (max-width: 600px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .stat-row { flex-direction: column; }
+    nav.toc li a { padding: 12px 12px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<!-- ════════════════════════════════════════ HEADER -->
+<header>
+  <div class="header-eyebrow">// Technical Deep Dive &nbsp;·&nbsp; Computer Science</div>
+  <h1>Inside the <em>Browser</em></h1>
+  <p class="header-sub">Engines, renderers, forks, ghosts of the web, and why a forty-year-old text terminal still makes perfect sense in 2026.</p>
+  <p class="header-meta">Written for engineers &nbsp;·&nbsp; ~8,500 words &nbsp;·&nbsp; 35 min read</p>
+  <div class="scroll-hint">
+    <span>scroll</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════ NAV -->
+<nav class="toc">
+  <ul>
+    <li><a href="#anatomy">Anatomy</a></li>
+    <li><a href="#engines">Engines</a></li>
+    <li><a href="#ui-layer">UI Layer</a></li>
+    <li><a href="#chromium-fork">Forking Chrome</a></li>
+    <li><a href="#presto">Presto &amp; Opera</a></li>
+    <li><a href="#firefox-tor">Firefox &amp; Tor</a></li>
+    <li><a href="#mobile">Mobile</a></li>
+    <li><a href="#repos">Repo Structure</a></li>
+    <li><a href="#text-browsers">Text Browsers</a></li>
+    <li><a href="#evolution">Web Evolution</a></li>
+  </ul>
+</nav>
+
+<!-- ════════════════════════════════════════ MAIN -->
+<main>
+
+<!-- ─── INTRO ───────────────────────────── -->
+<section id="intro">
+  <p style="font-size:20px; color: var(--text); font-style:italic;">
+    Every time you open a tab, you summon one of the most sophisticated pieces of software ever written by humans. A browser is not a window to the internet. It is an operating system inside an operating system — a full runtime, a graphics compositor, a networking stack, a JavaScript virtual machine, a process manager, a sandboxed security boundary, and a document layout engine, all wrapped in something your grandmother uses to check the weather.
+  </p>
+
+  <p>Understanding how browsers actually work — from the moment bytes arrive off the wire to the moment pixels light up your screen — is one of the most rewarding rabbit holes in computer science. It connects kernel interfaces, compiler theory, network protocols, GPU pipelines, type systems, and even economic incentives. This article is a long walk down that rabbit hole, with no flashlight spared.</p>
+</section>
+
+<!-- ─── ANATOMY ──────────────────────────── -->
+<section id="anatomy">
+  <div class="section-label">01 &nbsp; Architecture</div>
+  <h2>The <em>Anatomy</em> of a Browser</h2>
+
+  <p>Strip away the chrome (lowercase — the UI around the content) and every modern browser resolves into a handful of separable subsystems. There is the <strong>networking layer</strong>, responsible for DNS, TCP/TLS, HTTP/2 and HTTP/3, caching, and cookie management. There is the <strong>HTML parser</strong>, which converts a stream of bytes into a DOM tree in a way specified with almost absurd precision in the WHATWG HTML Living Standard. There is the <strong>CSS engine</strong>, which takes the cascade, specificity, and inheritance rules and computes a computed style for every node. There is the <strong>layout engine</strong>, which runs the box model, flex, grid, and block formatting contexts to position every rectangle on a virtual infinite canvas. There is the <strong>paint and compositing layer</strong>, which decides which regions to rasterize and which to promote to GPU-composited layers. And then there is the <strong>JavaScript engine</strong> — a JIT-compiling, garbage-collecting, event-loop-driving beast unto itself.</p>
+
+  <p>These subsystems interact in a pipeline that is simultaneously serialized and massively concurrent. Parsing can happen on a preload scanner thread before the main parser has caught up. Style recalculation and layout happen on the main thread but compositor work lives on its own thread entirely. JavaScript can force a <em>synchronous layout</em> — colloquially called a "layout thrash" — by reading a geometric property immediately after mutating the DOM, causing the entire pipeline to stall while layout catches up.</p>
+
+  <blockquote>"A browser is not a window to the internet. It is an operating system inside an operating system."</blockquote>
+
+  <p>The process model is just as interesting. Chrome pioneered the multi-process architecture in 2008 — one process per tab, with a privileged browser process orchestrating them — and called the design a site isolation strategy. Each renderer process runs in a sandbox, meaning it has no access to the filesystem, no ability to make arbitrary syscalls, and communicates with the outside world only through an IPC channel to the browser process. This design means a compromised tab cannot take over your machine. It is also why Chrome famously consumes more RAM than a small country's military budget: each process has its own V8 heap, its own network socket pools, its own copy of shared libraries mapped independently.</p>
+
+  <div class="callout blue">
+    <div class="callout-label">Deep Dive Reference</div>
+    <p>The Chrome team's original 2008 comic explaining the multi-process architecture remains one of the best engineering explainers ever written for a general audience: <a href="https://www.google.com/googlebooks/chrome/big_00.html">google.com/googlebooks/chrome</a>. It was illustrated by Scott McCloud, author of <em>Understanding Comics</em>, and is a masterpiece of technical communication.</p>
+  </div>
+
+  <p>Firefox uses a similar multi-process architecture called <strong>Fission</strong>, enabled by default since Firefox 95, which isolates each cross-origin iframe into its own process — not just each tab. This is actually stricter than Chrome's default process model and was a massive engineering undertaking given Firefox's age.</p>
+</section>
+
+<!-- ─── ENGINES ───────────────────────────── -->
+<section id="engines">
+  <div class="section-label">02 &nbsp; Engines</div>
+  <h2>The <em>Engines</em>: Layout, JavaScript, and the Graveyard of Great Ideas</h2>
+
+  <p>When engineers talk about a "browser engine," they usually mean two distinct things: the <strong>layout engine</strong> (also called rendering engine) and the <strong>JavaScript engine</strong>. These are separable systems that communicate at well-defined interfaces. A browser can in principle swap one without swapping the other, though in practice the two are co-evolved so tightly that this is rarely done cleanly.</p>
+
+  <h3>The Modern Rendering Engines</h3>
+
+  <p><strong>Blink</strong> is the rendering engine used by Chrome, Edge, Opera, Brave, Samsung Internet, and virtually every browser that is not Firefox or Safari. It is a fork of WebKit, which itself is a fork of KHTML, a KDE project from the early 2000s. When Google forked WebKit in 2013 to create Blink, the primary stated reason was architectural: the WebKit multi-process model was deeply entangled with Apple's implementation assumptions, and Google wanted freedom to experiment without coordination overhead. Blink lives at <a href="https://chromium.googlesource.com/chromium/src/+/main/third_party/blink/">chromium.googlesource.com</a>.</p>
+
+  <p><strong>WebKit</strong> remains Apple's engine, used in Safari on all Apple platforms, and — critically — it is the <em>only</em> rendering engine allowed on iOS, by App Store policy. Every "Chrome for iPhone" and "Firefox for iPhone" you have ever used is Blink or Gecko painted on the outside with a WebKit heart on the inside. This rule is being challenged by EU Digital Markets Act regulations, but its effects persist.</p>
+
+  <p><strong>Gecko</strong> is Mozilla's engine, used exclusively in Firefox and its derivatives. It predates both Blink and WebKit and was once the dominant engine of the web. Gecko's CSS engine, Stylo, is written in Rust and uses parallel style recalculation — one of the most interesting performance engineering stories in browser history. Its layout engine is currently being partially reimplemented as <a href="https://github.com/servo/servo">Servo</a>, a parallel browser engine also written in Rust that Mozilla originally created as a research project before spinning it out to the Linux Foundation.</p>
+
+  <h3>The JavaScript Engines</h3>
+
+  <p><strong>V8</strong> (Chrome/Node.js) introduced the world to JIT compilation in a browser engine in 2008. V8 compiles JavaScript to native machine code via a pipeline that currently goes: parsing → Ignition (bytecode interpreter) → Maglev (mid-tier JIT) → TurboFan (optimizing JIT). Each tier uses profiling feedback from the previous tier to speculate about types and generate tighter code. When a speculation is wrong, the engine "deoptimizes" — throws away the compiled code and falls back. This is the source of the performance cliffs developers sometimes hit with hot loops that touch polymorphic properties.</p>
+
+  <p><strong>SpiderMonkey</strong> is Firefox's JavaScript engine, the oldest surviving JS engine in production, first shipped in Netscape Navigator 2.0 in 1995. It has been rewritten, extended, and re-architected more times than most projects have existed. It currently uses a JIT pipeline called <strong>Warp</strong>. SpiderMonkey was also the first engine to ship a WebAssembly implementation.</p>
+
+  <p><strong>JavaScriptCore</strong> (JSC, also called Nitro) is WebKit's engine. It uses a four-tier JIT: the LLInt interpreter, Baseline JIT, DFG JIT, and FTL JIT. Its FTL (Faster Than Light) JIT uses LLVM as a backend in some configurations, which is genuinely exotic.</p>
+
+  <h3>The Graveyard: Engines That Mattered</h3>
+
+  <p><strong>Trident</strong> was Internet Explorer's engine from IE4 (1997) through IE11. Its legacy is incalculable — and mostly catastrophic. Trident's non-standard CSS box model (where padding and border were included inside the width, not added outside) required the CSS <code>box-sizing: border-box</code> hack that virtually every modern CSS framework uses by default. Trident was replaced by <strong>EdgeHTML</strong> in Microsoft Edge's original incarnation, which was in turn abandoned in 2019 when Microsoft decided to just rebuild Edge on Chromium.</p>
+
+  <p><strong>Presto</strong> deserves its own section — and it will get one.</p>
+
+  <div class="stat-row">
+    <div class="stat-box"><span class="stat-number">3</span><span class="stat-label">Surviving Layout Engines</span></div>
+    <div class="stat-box blue"><span class="stat-number">2008</span><span class="stat-label">Year V8 Shipped JIT</span></div>
+    <div class="stat-box green"><span class="stat-number">1995</span><span class="stat-label">SpiderMonkey Birth Year</span></div>
+  </div>
+
+  <div class="callout">
+    <div class="callout-label">Historical Note</div>
+    <p>The web platform effectively has only three independent rendering engine families: Blink (a Google fork), Gecko (Mozilla), and WebKit (Apple). Every other browser in the world uses one of these three. This is a dramatic consolidation from the early 2000s when Trident, Gecko, KHTML, and Presto all competed actively. Whether this homogenization is a security feature or a dangerous monoculture is a live debate — see the <a href="https://open-web-advocacy.org/">Open Web Advocacy</a> project for a strong argument in the latter direction.</p>
+  </div>
+</section>
+
+<!-- ─── UI LAYER ──────────────────────────── -->
+<section id="ui-layer">
+  <div class="section-label">03 &nbsp; The UI Layer</div>
+  <h2>Chrome <em>vs</em> Firefox: Two Completely Different UI Philosophies</h2>
+
+  <p>Here is a thing most users never think about: the browser chrome — the address bar, the tab bar, the toolbar buttons, the settings panels — is not rendered by the same engine as the web content. Or rather, it can be, but browsers have made wildly different choices about this.</p>
+
+  <h3>Chrome's Aura: A Custom UI Toolkit</h3>
+
+  <p>Chrome on desktop uses a UI framework called <strong>Aura</strong>. Aura is not a web technology, not GTK, not Win32, not Cocoa. It is a custom-written, cross-platform windowing and compositing system built entirely by Google. Aura manages its own window tree, its own input event routing, its own GPU-composited surfaces, and its own widget hierarchy — all implemented in C++.</p>
+
+  <p>Aura uses <strong>Skia</strong> as its 2D graphics library. Skia is Google's open-source 2D graphics engine (also used in Android, Flutter, and many other Google products), capable of rendering to OpenGL, Vulkan, Metal, Direct3D, and software rasterization backends. Aura calls Skia directly to draw every pixel of the browser chrome.</p>
+
+  <p>This design has major implications. First, it means Chrome's UI is <em>extremely</em> fast and smooth, because the chrome and the content compositor share the same GPU surface and can be composited together without any interprocess overhead. Second, it means the Chrome UI is <em>very hard</em> to customize. There is no stylesheet to modify. The toolbar is not an HTML element. The tab strip is a hand-crafted C++ widget. To change how anything looks, you must write C++, navigate Aura's widget hierarchy, understand Views (Google's widget abstraction layer that sits on top of Aura), and recompile Chromium.</p>
+
+  <a class="link-card" href="https://chromium.googlesource.com/chromium/src/+/main/ui/aura/">
+    <span class="link-card-title">↗ chromium.googlesource.com/chromium/src/+/main/ui/aura/</span>
+    <span class="link-card-desc">Aura's source code — the root of Chrome's entire UI windowing system</span>
+  </a>
+
+  <a class="link-card" href="https://chromium.googlesource.com/chromium/src/+/main/ui/views/">
+    <span class="link-card-title">↗ chromium.googlesource.com/chromium/src/+/main/ui/views/</span>
+    <span class="link-card-desc">Chrome Views framework — the widget system layered on top of Aura</span>
+  </a>
+
+  <h3>Firefox's XUL/HTML UI: Modification Paradise</h3>
+
+  <p>Firefox takes a diametrically opposite approach. The entire browser UI — every toolbar, every panel, every context menu, every dialog — is written in <strong>HTML, CSS, and JavaScript</strong>. This is the legacy of the <strong>XUL</strong> (XML User Interface Language) system Mozilla invented in the late 1990s to make Netscape 6's UI portable across platforms. Modern Firefox has largely replaced raw XUL with standard HTML custom elements, but the fundamental architecture remains: the browser chrome is a web page.</p>
+
+  <p>Here is the fascinating structural detail: the web content you browse is loaded inside a custom HTML element called <code>&lt;browser&gt;</code>. This is a Mozilla-specific XUL/HTML element that creates a sub-frame with its own process boundary, isolated JavaScript context, and renderer. The tab strip, navigation bar, and all UI are outside it, running in the privileged "parent process" context. The content inside <code>&lt;browser&gt;</code> runs in a sandboxed "content process." This is architecturally elegant — the process boundary is literally drawn by an HTML tag.</p>
+
+  <div class="callout green">
+    <div class="callout-label">The userChrome.css Trick</div>
+    <p>Because Firefox's UI is HTML/CSS, you can create a file called <code>userChrome.css</code> in your Firefox profile directory and write arbitrary CSS that applies to the browser UI itself. You can hide the tab bar, restyle the address bar, move buttons, add custom fonts to menus — things that would require recompiling Chrome from source to achieve. It is one of the most powerful customization features in any browser and remains a beloved tool for power users. See <a href="https://www.userchrome.org/">userchrome.org</a> for a community dedicated to exactly this.</p>
+  </div>
+
+  <p>The tradeoff is performance. Rendering a toolbar in HTML and compositing it alongside GPU-accelerated web content requires careful engineering to avoid jank. Mozilla has invested heavily here with <strong>WebRender</strong>, a GPU-accelerated renderer written in Rust that replaced the old software rasterizer and dramatically improved the performance of both UI and content rendering. WebRender treats the entire display as a series of rectangles with transforms and effects — more like a 3D scene graph than a traditional 2D painter model.</p>
+
+  <div class="compare-grid">
+    <div class="compare-cell header">Chrome / Aura</div>
+    <div class="compare-cell header">Firefox / HTML UI</div>
+    <div class="compare-cell"><p><strong>Technology:</strong> C++ Aura/Views framework, Skia for rendering</p><p><strong>Customization:</strong> Must fork and recompile C++</p><p><strong>Performance:</strong> Excellent; native GPU compositing path</p><p><strong>Portability:</strong> Aura manages per-platform backends</p></div>
+    <div class="compare-cell"><p><strong>Technology:</strong> HTML/CSS/JS, WebRender for GPU rasterization</p><p><strong>Customization:</strong> Edit a CSS file; no compile needed</p><p><strong>Performance:</strong> Excellent post-WebRender; was a weakness pre-2020</p><p><strong>Portability:</strong> Inherent from HTML; per-platform shell thin</p></div>
+  </div>
+
+  <h3>The <code>chrome://</code> Protocol and a Bit of History</h3>
+
+  <p>Here is a footnote that delights many people when they first encounter it: Mozilla used the <code>chrome://</code> URL scheme internally — to refer to browser UI resources like icons, stylesheets, and XUL files — long before Google named their browser Chrome. The protocol existed in Netscape Navigator 4's backend and was formalized in Mozilla's codebase circa 1999. When Google launched their browser in 2008 and named it Chrome (partly as an ironic nod to the desire to minimize browser "chrome" in favor of content), they inadvertently named it after an existing URL scheme that their engine's predecessor had used for a decade. The collision is purely coincidental and remains a persistent source of nomenclature confusion to this day.</p>
+</section>
+
+<!-- ─── CHROMIUM FORK ─────────────────────── -->
+<section id="chromium-fork">
+  <div class="section-label">04 &nbsp; Forking Chromium</div>
+  <h2>The Art and Agony of <em>Forking</em> Chromium</h2>
+
+  <p>Chromium is one of the largest open-source codebases in existence. The Chromium repository contains roughly 35 million lines of code across approximately 300,000 files. Cloning it takes a dedicated tool (<code>depot_tools</code> and the <code>gclient</code> dependency manager), a very fast internet connection, and patience measured in hours. Building it requires a machine that would embarrass many data centers: Google recommends 32 GB of RAM and a fast NVMe drive, and a full debug build can exceed 50 GB of disk space.</p>
+
+  <p>Yet dozens of companies have forked it. Opera, Brave, Edge, Vivaldi, Samsung Internet, UC Browser, Yandex Browser, and many others all maintain forks. Why? Because the alternative is building a browser from scratch, which is a decade-long project for a team of hundreds. Chromium gives you HTTP/3, WebGPU, WebAssembly, V8, site isolation, and a conformant implementation of most of the web platform, essentially for free.</p>
+
+  <h3>Repo Structure and the GN Build System</h3>
+
+  <p>Chromium uses a build system called <strong>GN</strong> (Generate Ninja), which generates Ninja build files from a declarative description of build targets. Every directory in the repo that participates in the build contains a <code>BUILD.gn</code> file. These files define libraries, executables, and their dependencies. The entry point for the browser binary is something like <code>chrome/BUILD.gn</code>; a fork typically creates a parallel directory, say <code>myfork/BUILD.gn</code>, and routes the binary target there instead.</p>
+
+<pre>
+<span class="comment"># Simplified view of Chromium's top-level directory layout</span>
+<span class="dir">base/</span>          <span class="comment"># Cross-platform abstractions (threading, strings, files)</span>
+<span class="dir">build/</span>         <span class="comment"># Build system configs, toolchains, feature flags</span>
+<span class="dir">chrome/</span>        <span class="comment"># The 'chrome' browser binary - UI code, browser process</span>
+  <span class="dir">browser/</span>     <span class="comment"># Browser process: tabs, sessions, prefs, UI controllers</span>
+  <span class="dir">renderer/</span>    <span class="comment"># Renderer process hooks (mostly thin wrappers)</span>
+  <span class="dir">common/</span>      <span class="comment"># Shared between browser and renderer processes</span>
+  <span class="dir">android/</span>     <span class="comment"># Android-specific chrome code</span>
+<span class="dir">content/</span>       <span class="comment"># The Content API - the embedder-facing surface of Blink</span>
+<span class="dir">components/</span>   <span class="comment"># Reusable components (autofill, password manager, sync...)</span>
+<span class="dir">third_party/</span>   <span class="comment"># External deps: blink, v8, skia, ffmpeg, boringssl...</span>
+  <span class="dir">blink/</span>       <span class="comment"># The Blink rendering engine lives here</span>
+  <span class="dir">v8/</span>          <span class="comment"># V8 JavaScript engine (often a git submodule)</span>
+  <span class="dir">skia/</span>        <span class="comment"># Skia 2D graphics library</span>
+<span class="dir">ui/</span>            <span class="comment"># UI toolkit: Aura, Views, GL surfaces, input handling</span>
+  <span class="dir">aura/</span>        <span class="comment"># The Aura window manager</span>
+  <span class="dir">views/</span>       <span class="comment"># Widget/layout framework built on Aura</span>
+<span class="dir">net/</span>           <span class="comment"># Network stack: HTTP, DNS, cookies, TLS</span>
+<span class="dir">media/</span>         <span class="comment"># Media pipeline: video decode, WebRTC, audio</span>
+<span class="dir">services/</span>      <span class="comment"># Mojo IPC services: network, audio, storage</span>
+</pre>
+
+  <p>A fork that wants to replace Chrome's UI with something custom will typically work in the <code>chrome/browser/ui/</code> subtree, replacing Views widgets with their own implementations. They keep the <code>content/</code> API surface (which is Blink's public embedding interface) untouched, since that is the actual rendering engine. The fork adds its own top-level directory alongside <code>chrome/</code>, configures GN to build that directory's targets, and applies patches to <code>chrome/</code> files where integration is unavoidable.</p>
+
+  <h3>The Rebase Treadmill</h3>
+
+  <p>Here is the brutal economic reality of maintaining a Chromium fork: Google merges new commits into Chromium at a rate of several hundred per day. Security patches, which must be shipped within days of disclosure, arrive on an urgent schedule. A fork must continuously rebase or cherry-pick upstream changes onto their patch set, resolve merge conflicts, re-test the result, and ship. This is a full-time job for a dedicated team. Brave and Vivaldi both dedicate significant engineering resources purely to upstream tracking. Companies that underestimate this cost end up shipping old Chromium versions with known security vulnerabilities — which is worse than not forking at all.</p>
+
+  <div class="callout">
+    <div class="callout-label">How Edge Does It</div>
+    <p>Microsoft Edge uses an internal monorepo that imports Chromium via a submodule-like system, then applies a set of patches (stored as <code>.patch</code> files) to add Edge-specific features: the Fluent UI shell, Bing integration, Collections, the vertical tabs feature, and so on. The Edge team has a dedicated team that tracks Chromium releases and promotes new base versions approximately every 4 weeks, aligning with Chromium's release cadence. This is a scale that only a company the size of Microsoft can sustain without it being a death march.</p>
+  </div>
+
+  <h3>Why Most Projects Choose Chromium Over Firefox</h3>
+
+  <p>The choice of Chromium as a base is not unanimous, but it is overwhelmingly popular. The reasons are partly technical and partly political. Technically, Chromium's <strong>Content API</strong> is explicitly designed to be a clean embedding interface — it is a public API with documented semantics for embedding the web engine in a host application. Firefox's equivalent, <strong>GeckoView</strong>, is well-designed for Android but has no equivalent stable embedding API for desktop applications. There is no stable, versioned, documented C++ or IPC-based interface to embed Gecko in your own desktop shell the way you can embed Chromium via the Content API.</p>
+
+  <p>Politically, Google has historically been more permissive with commercial Chromium forks than Mozilla has been with Firefox derivatives. Mozilla's trademark policy makes it difficult to distribute a modified Firefox under a similar name without a formal licensing agreement. The Chromium project has no such restriction — the <em>Chromium</em> brand is free to use; only the <em>Google Chrome</em> name and trademark are restricted.</p>
+</section>
+
+<!-- ─── PRESTO & OPERA ────────────────────── -->
+<section id="presto">
+  <div class="section-label">05 &nbsp; Presto & Opera</div>
+  <h2>The <em>Presto</em> Engine: Opera's Beautiful Ghost</h2>
+
+  <div class="opera-badge">⚡ Opera Presto — The Road Not Taken</div>
+
+  <p>If you want to understand how different browsers can be under the hood, study Presto. Opera Software's in-house rendering engine, developed continuously from 1994 through 2013, was in many technical respects more advanced than its contemporaries during its peak years. It was also the engine of Opera 12 — widely considered the best desktop browser ever made by a segment of the web community that still mourns its death with genuine grief.</p>
+
+  <p>Presto had a fundamentally different architecture from Gecko and WebKit. Its layout engine was built to be extremely compact and fast on low-resource hardware — a design decision forced by Opera's early success on mobile phones, digital televisions, and gaming consoles (the Nintendo DS and Wii both shipped with Opera as their browser). Where WebKit and Gecko grew by accreting layers of optimization for desktop hardware, Presto was ruthlessly optimized for constrained environments from birth.</p>
+
+  <h3>What Made Presto Special</h3>
+
+  <p>Presto's CSS implementation was, at various points in its history, the most standards-compliant rendering engine available. Opera's developers were active in W3C working groups and frequently shipped CSS features before any other browser. Presto supported CSS transitions and transforms years before they appeared in WebKit. Its ECMAScript engine, called <strong>Carakan</strong>, was a complete rewrite shipped in 2010 with register-based bytecode and a native code compiler — it was state-of-the-art for its era and benchmarked competitively with V8 and SpiderMonkey.</p>
+
+  <p>Presto also supported a feature called <strong>Opera Turbo</strong>, a proxy-based compression service that compressed web pages on Opera's servers before delivering them to the browser — reducing data usage by 50-80%. This was available in the desktop browser but was clearly designed with bandwidth-constrained users in mind, presaging the architecture that would later become Opera Mini.</p>
+
+  <p>Opera 12 (Presto's final full desktop version, shipped 2012) included a mail client, IRC client, BitTorrent client, notes manager, and a spatial navigation system that let you navigate links with arrow keys — all without any extensions, just built in. It had mouse gestures, a customizable Speed Dial, and a tab stacking feature that modern browsers are still trying to replicate properly. From a pure feature density standpoint, nothing before or since has matched it in a single browser binary.</p>
+
+  <blockquote>"Opera 12 was what a browser could be when a small, brilliant team had total control of their stack and optimized for users instead of advertising market share."</blockquote>
+
+  <h3>The Death of Presto on Desktop</h3>
+
+  <p>In February 2013, Opera announced they were abandoning Presto and switching to Chromium/Blink for their desktop browser. The decision was primarily economic: maintaining a proprietary rendering engine competitive with the multi-billion-dollar investments Google and Apple were making in Blink and WebKit was simply no longer viable for a company of Opera's size. The web compatibility argument was also real — as developers began testing only in Chrome and Safari, Presto-specific rendering differences became increasingly user-visible. Opera went from a unique experience to an also-ran version of Chrome almost overnight, and many longtime users simply left.</p>
+
+  <h3>Opera Mini and the Presto Immortality</h3>
+
+  <p>Here is where the story turns unexpectedly alive. While Presto disappeared from desktop browsers, it never died. It lives today inside <strong>Opera Mini</strong>, and its survival is not accidental or sentimental — it is economically essential.</p>
+
+  <p>Opera Mini is a proxy browser. When you request a page in Opera Mini, the request goes not to the website directly but to Opera's servers. Those servers fetch the page, render it using a modified Presto engine, and transcoded the rendered result into a highly compressed binary format called <strong>OBML</strong> (Opera Binary Markup Language) before sending it to the device. The device-side client is a thin OBML renderer — it does not need to run JavaScript, parse HTML, or do layout. It just displays what the server already computed.</p>
+
+  <p>This architecture means Opera Mini can run on a <strong>feature phone</strong> — a non-smartphone with perhaps 64MB of RAM, a 200MHz processor, and a Java ME runtime — and still browse the modern web. The heavy lifting happens on Opera's servers. The phone receives something closer to a compressed image with tap targets than a full web page.</p>
+
+  <div class="callout green">
+    <div class="callout-label">Why Presto Is Still Running in 2026</div>
+    <p>In large parts of sub-Saharan Africa, South and Southeast Asia, and rural regions worldwide, feature phones running Java ME are not legacy devices — they are the <em>primary</em> connected device for hundreds of millions of people on 2G/EDGE connections. Opera Mini with its Presto backend is frequently their only realistic path to internet access. Opera's server infrastructure runs modified Presto to render pages because Presto was designed for exactly this kind of proxy rendering, the codebase is mature and stable, and rewriting the server-side renderer in a modern engine would be an enormous investment for a product that serves a population that generates relatively little advertising revenue per user. It is more economical to keep Presto running than to replace it.</p>
+  </div>
+
+  <p>Opera monetizes the Mini ecosystem through a combination of advertising served in the browser (with demographics that skew toward developing-market users valuable to certain advertisers), <strong>Opera Pay</strong> (a mobile payments and airtime top-up service integrated into Mini), news aggregation through Opera News, and carrier partnerships. The feature-phone population may not generate $30 ARPU like a North American desktop user, but it is a very large population, and Opera has no meaningful competition for it. They are the internet gateway for entire regions.</p>
+
+  <p>The decision to keep Presto alive is thus not nostalgia — it is the recognition that no other rendering architecture can economically serve that use case. Presto's proxy model, its compact footprint, and its 20+ years of accumulated stability make it the right tool for this specific job. It is one of the most unusual long-term survival stories in commercial software.</p>
+
+  <a class="link-card" href="https://www.opera.com/mini">
+    <span class="link-card-title">↗ opera.com/mini</span>
+    <span class="link-card-desc">Opera Mini — still very much alive, still very much Presto on the server side</span>
+  </a>
+</section>
+
+<!-- ─── FIREFOX & TOR ─────────────────────── -->
+<section id="firefox-tor">
+  <div class="section-label">06 &nbsp; Firefox and Tor</div>
+  <h2>Why <em>Tor</em> Chose Firefox</h2>
+
+  <p>The Tor Browser is one of the most carefully engineered privacy tools ever deployed at scale, and its architecture decisions reveal a sophisticated set of threat-model considerations that are worth understanding even if you never plan to use it.</p>
+
+  <p>Tor Browser is based on Firefox Extended Support Release (ESR). The choice of Firefox over Chromium is deliberate and multifaceted, and the Tor Project has explained it publicly several times.</p>
+
+  <h3>The Fingerprinting Surface Problem</h3>
+
+  <p>Browser fingerprinting is the practice of identifying users not by cookies or IP addresses, but by the unique combination of characteristics their browser exposes: screen resolution, installed fonts, WebGL renderer string, audio context processing behavior, Canvas rendering differences, timezone, installed plugins, and dozens more signals. A sufficiently unique fingerprint can identify a user across sessions even through a VPN or Tor exit node.</p>
+
+  <p>Tor Browser's entire security model depends on making all its users look identical to fingerprinting attempts — a property called <strong>uniform fingerprint</strong>. Every Tor Browser user should look like every other Tor Browser user. This requires controlling the rendering engine at a very deep level.</p>
+
+  <h3>Why Firefox and Not Chromium</h3>
+
+  <p>Firefox's HTML/CSS UI model makes it possible to modify the browser's behavior extensively through configuration and patching without deep C++ changes. The Tor Project patches Firefox's canvas API to return slightly randomized data (to defeat canvas fingerprinting), patches the font enumeration API to return only a standard list, and patches the WebGL stack to suppress renderer-identifying strings. Most of these patches are in JavaScript or are relatively shallow C++ changes to well-defined APIs. The same patches applied to Chromium would require navigating Aura, Views, Blink's internal rendering pipeline, and Google's process isolation architecture in ways that are significantly more complex.</p>
+
+  <p>There is also an institutional relationship: Mozilla and the Tor Project have collaborated for years. Mozilla has accepted Tor-requested patches upstream (such as the <strong>letterboxing</strong> feature that adds margins around content to prevent window-size fingerprinting) and has funded the Tor Project financially. This kind of collaborative relationship does not exist with Google/Chromium in the same way.</p>
+
+  <p>Finally, there is the question of telemetry and Google services. Chromium is architecturally designed around Google's infrastructure — Safe Browsing, spell-check, and autofill all phone home to Google servers by default. Disabling all of this cleanly without introducing fingerprinting-distinguishable behavior is substantially more difficult than doing the equivalent in Firefox, where Mozilla's services infrastructure is more modular and cooperative with the security research community.</p>
+
+  <a class="link-card" href="https://gitlab.torproject.org/tpo/applications/tor-browser">
+    <span class="link-card-title">↗ gitlab.torproject.org/tpo/applications/tor-browser</span>
+    <span class="link-card-desc">Tor Browser's source repository — the patches on top of Firefox ESR are illuminating</span>
+  </a>
+</section>
+
+<!-- ─── MOBILE ────────────────────────────── -->
+<section id="mobile">
+  <div class="section-label">07 &nbsp; Desktop vs. Mobile</div>
+  <h2>Mobile Browsers and the <em>Ruthless Resource Manager</em></h2>
+
+  <p>Desktop and mobile browsers often share the same underlying engine — Chrome on Android uses V8 and Blink, same as Chrome on macOS. Yet the mobile browser experience is frequently smoother and more responsive than the desktop version, particularly for simple browsing tasks. This is counterintuitive given that the hardware is less powerful. The explanation lies in resource management philosophy.</p>
+
+  <h3>Desktop's Abundance Problem</h3>
+
+  <p>Desktop Chrome has historically operated in an environment of perceived abundance. Machines have 16–32 GB of RAM. There are multiple CPU cores. Power consumption is connected to the wall. In this environment, Chrome's multi-process model spins up background processes freely, pre-renders pages, warms up service workers, maintains large in-memory caches, and keeps dozens of background tabs fully alive with their V8 heaps intact. This makes individual operations fast but the aggregate resource consumption enormous. The infamous "Chrome eating RAM" experience is the direct consequence of a design that treats memory as cheap.</p>
+
+  <h3>Mobile's Constraint Discipline</h3>
+
+  <p>Mobile Chrome operates under Android's <strong>Low Memory Killer</strong> (LMK), which will terminate background processes without mercy when free memory runs low. This creates an architectural discipline: the browser must aggressively discard state, serialize and freeze background tab state to disk, and rebuild it on demand. Background tabs in mobile Chrome may be fully discarded and their renderer processes killed after just a few minutes. When you return to them, you see a reload.</p>
+
+  <p>This "kill it if you can't afford it" philosophy creates a browser that maintains a very small working set and operates cleanly at 3–4 GB of RAM total. The same browser on desktop, without the LMK enforcer, can balloon to 8–10 GB without any user-visible consequence until the machine starts paging to disk.</p>
+
+  <p>Mobile browsers also have a fundamentally different compositing model. iOS's <strong>WKWebView</strong> (the WebKit embedding API all iOS browsers must use) does its rendering in a separate process from the application, with the compositor at the kernel level mediating the display — this is why iOS browser scrolling is buttery smooth at 60/120fps even under load. The display pipeline is decoupled from JavaScript execution in a way desktop browsers achieve only partially.</p>
+
+  <div class="callout blue">
+    <div class="callout-label">Android's WebView Problem</div>
+    <p>Android's <strong>System WebView</strong> (the embedded browser component that apps use for in-app browsing) shares its Chromium version with Chrome itself — it is an APK that gets updated through the Play Store. For years this was a significant security vulnerability vector, since OEMs would ship Android versions with outdated WebViews. Since Android 5.0, WebView has been an updatable system component, but fragmentation across Android versions means many devices are still running WebViews many months behind current Chromium. This is a significant attack surface difference from iOS, where Safari/WebKit is updated as part of the OS and typically reaches users within days of a security patch.</p>
+  </div>
+
+  <h3>GeckoView: Firefox's Mobile Rebirth</h3>
+
+  <p>Firefox for Android went through a complete rewrite between 2019 and 2020, replacing the legacy "Fennec" codebase (which was essentially a port of desktop Firefox) with <strong>Fenix</strong>, built on top of <strong>GeckoView</strong>. GeckoView is Mozilla's Android-specific Gecko embedding API: it exposes Gecko as an Android View, giving app developers a well-defined Kotlin/Java interface to embed the full Gecko engine in their apps. The Fenix rewrite brought Firefox for Android back into competitive territory performance-wise, reduced the APK size dramatically, and allowed GeckoView to be used by other apps (like Tor Browser for Android).</p>
+</section>
+
+<!-- ─── REPOS ──────────────────────────────── -->
+<section id="repos">
+  <div class="section-label">08 &nbsp; Repository Architecture</div>
+  <h2>One Repo, <em>Every Platform</em></h2>
+
+  <p>One of the most impressive pieces of engineering in both Chromium and Firefox is how a single source tree builds for a dozen different targets — Windows x64, macOS ARM, Linux x64, Android ARM64, ChromeOS, iOS, Fuchsia — producing different binaries that behave correctly on each platform.</p>
+
+  <h3>Chromium's Approach: Feature Flags and GN Conditions</h3>
+
+  <p>Chromium's GN build files make heavy use of platform conditions. Every <code>BUILD.gn</code> can include source files conditionally:</p>
+
+<pre>
+<span class="comment"># Example from Chrome's base/ directory pattern</span>
+source_set("base") {
+  sources = [
+    <span class="file">"file_util.cc"</span>,         <span class="comment"># Cross-platform</span>
+    <span class="file">"time/time.cc"</span>,
+  ]
+
+  if (is_win) {
+    sources += [
+      <span class="file">"file_util_win.cc"</span>,
+      <span class="file">"time/time_win.cc"</span>,
+    ]
+  }
+
+  if (is_posix) {
+    sources += [
+      <span class="file">"file_util_posix.cc"</span>,
+    ]
+  }
+
+  if (is_android) {
+    sources += [
+      <span class="file">"android/jni_android.cc"</span>,
+    ]
+    deps += [ <span class="file">"//base/android:base_jni_headers"</span> ]
+  }
+
+  if (is_mac) {
+    sources += [ <span class="file">"mac/scoped_nsobject.mm"</span> ]
+    frameworks = [ <span class="file">"CoreFoundation.framework"</span> ]
+  }
+}
+</pre>
+
+  <p>The <code>is_win</code>, <code>is_android</code>, <code>is_mac</code> etc. variables are set at configure time when you run <code>gn gen out/Release</code> with the appropriate <code>target_os</code> argument. A GN argument file (a <code>args.gn</code> inside the output directory) contains the full build configuration: target OS, CPU architecture, component mode (static or shared library), optimization level, whether to include symbols, which Chrome features to enable, and so on.</p>
+
+  <p>Firefox uses a similar system with <strong>moz.build</strong> files (the equivalent of GN's BUILD.gn) and a <code>configure.py</code> step that sets a similar set of platform predicates. The Mozilla-specific feature flag system, called <strong>moz-featureflags</strong>, controls which features are enabled per-platform and per-release channel (Nightly, Beta, Release).</p>
+
+  <h3>Separate Channels, Same Tree</h3>
+
+  <p>Both Chrome and Firefox ship multiple simultaneous versions — Stable, Beta, Dev/Nightly — all built from the same repository but from different branches or commit snapshots. Chrome's release cadence is roughly 4 weeks per major version. When a new major version starts, a branch is cut from main (called <code>refs/branch-heads/{version}</code> in the Chromium repo), security fixes are cherry-picked onto that branch, and the branch is what ships to users. New feature development continues on main and will appear in the next major version.</p>
+
+  <a class="link-card" href="https://source.chromium.org/chromium">
+    <span class="link-card-title">↗ source.chromium.org/chromium</span>
+    <span class="link-card-desc">Chromium source code browser — searchable, cross-referenced, and surprisingly navigable</span>
+  </a>
+
+  <a class="link-card" href="https://searchfox.org/">
+    <span class="link-card-title">↗ searchfox.org</span>
+    <span class="link-card-desc">Mozilla's code search tool — brilliant for navigating Firefox/Gecko, cross-referenced with blame and history</span>
+  </a>
+</section>
+
+<!-- ─── TEXT BROWSERS ─────────────────────── -->
+<section id="text-browsers">
+  <div class="section-label">09 &nbsp; Text Browsers</div>
+  <h2>The Terminal and the <em>Web</em>: Text Browsers</h2>
+
+  <p>Before Mosaic, before Netscape, before any of the rendering engines we have discussed, the web was navigated with a text browser. Tim Berners-Lee's first browser, called WorldWideWeb (later renamed Nexus), was not actually text-based — it ran on NeXTStep and had a GUI. But the first <em>widely available</em> web browser was <strong>Lynx</strong>, written at the University of Kansas in 1992, and it ran in a terminal.</p>
+
+  <p>Text browsers render only the textual content of a web page, stripping images, video, CSS, and JavaScript entirely. What remains is the structural content — headings, paragraphs, links, form inputs — displayed in monochrome or 256-color ANSI terminal output, navigated with keyboard commands. This is both a serious limitation and, in specific contexts, a genuine advantage.</p>
+
+  <h3>Lynx: The Immortal</h3>
+
+  <p><strong>Lynx</strong> is still actively maintained in 2026. It parses HTML, follows HTTP redirects, handles cookies and form submissions, and supports TLS. It does not execute JavaScript and does not load external resources beyond what is directly linked. Its memory footprint is measured in megabytes. It runs on any POSIX system and on Windows. System administrators who need to debug web endpoints from a remote SSH session reach for Lynx constantly. It is also used for accessibility testing — if a page is completely broken in Lynx, it likely fails screen reader accessibility tests too, because the accessibility tree and the text-mode DOM representation share similar structural requirements.</p>
+
+  <a class="link-card" href="https://lynx.browser.org/">
+    <span class="link-card-title">↗ lynx.browser.org</span>
+    <span class="link-card-desc">Lynx — the original terminal web browser, still receiving updates</span>
+  </a>
+
+  <h3>w3m and Links</h3>
+
+  <p><strong>w3m</strong> is another venerable text browser, notable for its ability to render images in terminals that support sixel graphics or the iTerm2 inline image protocol — a feature that makes it genuinely usable for light web browsing in a modern terminal. <strong>Links2</strong> goes further: in its graphical mode, it has a simple framebuffer renderer that can display images, use TrueType fonts, and render basic CSS, all without a display server. Running <code>links2 -g</code> on a Linux system without an X session is genuinely useful for locked-down environments.</p>
+
+  <h3>The Modern Text Browser: Browsh</h3>
+
+  <p><strong>Browsh</strong> is the most technically interesting modern text browser. It is not, strictly speaking, a browser engine at all — it runs a headless Firefox instance, captures its rendered output, and translates that output into colored Unicode characters (half-block characters like ▄ and ▀) displayed in a terminal. This means Browsh renders full CSS, executes JavaScript, plays video, and handles all modern web features — all in a terminal. It is astonishing to use and technically a beautiful hack.</p>
+
+  <a class="link-card" href="https://www.brow.sh/">
+    <span class="link-card-title">↗ brow.sh — Browsh</span>
+    <span class="link-card-desc">A modern terminal browser that actually runs Firefox under the hood — surreal and effective</span>
+  </a>
+
+  <div class="compare-grid">
+    <div class="compare-cell header">Text Browsers</div>
+    <div class="compare-cell header">Graphical Browsers</div>
+    <div class="compare-cell">
+      <p><strong>Memory:</strong> 5–50 MB typical</p>
+      <p><strong>JS Support:</strong> None (Lynx/w3m) to full (Browsh)</p>
+      <p><strong>Use case:</strong> SSH sessions, servers, accessibility testing, minimal environments</p>
+      <p><strong>Speed:</strong> Instantaneous page loads; no layout computation</p>
+      <p><strong>Privacy:</strong> No JavaScript means no fingerprinting, no trackers, no ads</p>
+    </div>
+    <div class="compare-cell">
+      <p><strong>Memory:</strong> 500 MB–3 GB typical</p>
+      <p><strong>JS Support:</strong> Full JIT-compiled engines</p>
+      <p><strong>Use case:</strong> General web use, rich apps, media</p>
+      <p><strong>Speed:</strong> Complex pipelines; milliseconds to seconds per page</p>
+      <p><strong>Privacy:</strong> Depends entirely on user configuration and extensions</p>
+    </div>
+  </div>
+
+  <p>Text browsers also matter for a less obvious reason: they represent the floor of web accessibility. If your web application is completely broken in a text browser — if it requires JavaScript to load any content, if it has no semantic HTML structure, if navigation is only possible with a mouse — then it is likely inaccessible to screen reader users, to people on very slow connections, and to search engine crawlers that do not execute JavaScript. The "text browser test" is a quick and dirty accessibility and performance audit that senior web developers sometimes use as a first sanity check on a new codebase.</p>
+</section>
+
+<!-- ─── EVOLUTION ─────────────────────────── -->
+<section id="evolution">
+  <div class="section-label">10 &nbsp; The Moving Target</div>
+  <h2>The <em>Relentless</em> Evolution of the Web</h2>
+
+  <p>The web platform adds approximately 20–30 new APIs per year across CSS, JavaScript, and web APIs. In the past five years alone, we have seen the arrival of WebGPU (a modern, explicit GPU compute and graphics API for the web), CSS Container Queries, the View Transitions API, WebCodecs, WebTransport, the Popover API, CSS Anchor Positioning, and Speculation Rules for instant navigation. Each of these requires significant implementation work across all three major rendering engines.</p>
+
+  <p>This pace of change is the most significant argument against building a new browser engine from scratch today. An engineer starting a new browser project in 2026 would need to implement not just 1994's HTML, but: the HTML Living Standard (constantly updated), CSS Level 3–5 features across several hundred specifications, ECMAScript 2025 with all its syntax and standard library additions, WebAssembly with its growing set of proposals, the Web API surface (ServiceWorkers, WebRTC, MediaStream, Gamepad, File System Access, WebBluetooth, WebSerial...), TLS 1.3, HTTP/3 over QUIC, and WebGPU. By the time they finished, the target would have moved again.</p>
+
+  <p>This is the deeper reason why Blink, Gecko, and WebKit have effectively oligopolized the browser market. The barrier to entry is not talent or money alone — it is time. The accumulated implementation of 30 years of web standards is not something that can be shortcut.</p>
+
+  <div class="callout">
+    <div class="callout-label">The Ladybird Exception</div>
+    <p><strong>Ladybird</strong> is an extraordinarily ambitious project to build a new, independent browser engine from scratch. It originated as the browser in the SerenityOS project and is now being developed as a standalone engine. It is written in C++ (and increasingly in Swift for Apple targets), implements its own HTML parser, CSS engine, and JavaScript engine (LibJS), and is genuinely making progress toward real-world web compatibility. It is the most credible attempt at a new engine in 15+ years. Follow it at <a href="https://ladybird.org/">ladybird.org</a> — it is worth watching even if you are skeptical about its ultimate prospects.</p>
+  </div>
+
+  <p>The web's evolution is also governed by an interesting multi-stakeholder political process. New features must pass through the <strong>W3C</strong> and <strong>WHATWG</strong> standards bodies, then receive positive signals from at least two of the three major browser engines before they are considered viable for standardization (the "two implementors rule"). This means any new web feature requires either Google, Apple, or Mozilla to want it — the politics of which is a fascinating and sometimes frustrating field unto itself. Apple's resistance to progressive web apps on iOS shaped mobile application economics for a decade. Google's unilateral deprecation of third-party cookies has reshaped the entire digital advertising industry.</p>
+
+  <p>The browser has become, without exaggeration, one of the most consequential software platforms ever created. It runs on every device, hosts the majority of human-computer interaction that is not a phone call or video stream, and is governed by a combination of open standards, corporate investment, and occasionally heroic open-source maintenance. Understanding it — really understanding it, from the GN build files to the Presto server farm somewhere keeping a feature-phone user in Nairobi connected — is understanding a significant fraction of how the modern world runs.</p>
+
+  <div class="divider"><div class="divider-glyph">⬡</div></div>
+
+  <h3>Further Reading and Resources</h3>
+
+  <a class="link-card" href="https://www.html5rocks.com/en/tutorials/internals/howbrowserswork/">
+    <span class="link-card-title">↗ How Browsers Work — Tali Garsiel (2011)</span>
+    <span class="link-card-desc">The canonical deep-dive into browser internals; older but foundational. Hosted on web.dev now.</span>
+  </a>
+
+  <a class="link-card" href="https://developer.chrome.com/blog/inside-browser-part1">
+    <span class="link-card-title">↗ Inside look at modern web browser — Google Chrome Developers Blog</span>
+    <span class="link-card-desc">A four-part modern series covering Chrome's multi-process architecture with excellent illustrations</span>
+  </a>
+
+  <a class="link-card" href="https://hacks.mozilla.org/2017/08/inside-a-super-fast-css-engine-quantum-css-aka-stylo/">
+    <span class="link-card-title">↗ Inside a Super Fast CSS Engine: Quantum CSS — Mozilla Hacks</span>
+    <span class="link-card-desc">Lin Clark's illustrated deep-dive into Firefox's parallel Rust CSS engine</span>
+  </a>
+
+  <a class="link-card" href="https://github.com/nicowillis/a-tale-of-two-engines">
+    <span class="link-card-title">↗ Servo — GitHub</span>
+    <span class="link-card-desc">Mozilla's experimental parallel browser engine in Rust — now maintained by the Linux Foundation</span>
+  </a>
+
+  <a class="link-card" href="https://github.com/nicowillis">
+    <span class="link-card-title">↗ chromium.org/developers/how-tos/get-the-code</span>
+    <span class="link-card-desc">The official guide to checking out and building Chromium — a rite of passage</span>
+  </a>
+
+  <a class="link-card" href="https://www.youtube.com/watch?v=0IsQqJ7pwhw">
+    <span class="link-card-title">↗ BlinkOn Conference Talks — YouTube</span>
+    <span class="link-card-desc">Chromium engineers presenting deep technical work on Blink, V8, and Chrome infrastructure</span>
+  </a>
+
+  <a class="link-card" href="https://ladybird.org/">
+    <span class="link-card-title">↗ ladybird.org</span>
+    <span class="link-card-desc">The only serious attempt to build a new browser engine from scratch in a generation</span>
+  </a>
+</section>
+
+</main>
+
+<footer>
+  <p style="margin-bottom:8px;">Technical Deep Dive &nbsp;·&nbsp; Browser Engineering &nbsp;·&nbsp; 2026</p>
+  <p>All links are to public documentation, source repositories, and project pages.</p>
+</footer>
+
+</body>
+</html>
