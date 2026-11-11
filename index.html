@@ -6,12 +6,138 @@
 <title>Abu (abraham-ny) - Home Page</title>
 <style>
   body { font-family: "Courier New", Courier, monospace; max-width: 70ch; margin: 1em auto; padding: 0 1em; }
+
+  /* ---------- Windows 98 style buttons ---------- */
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; margin: 1em 0; }
+  .btn98 {
+    display: inline-block;
+    box-sizing: border-box;
+    min-width: 110px;
+    padding: 6px 16px;
+    background: #c0c0c0;
+    color: #000;
+    border: 0;
+    border-radius: 0;
+    font: 14px "MS Sans Serif", Tahoma, Geneva, Arial, sans-serif;
+    text-align: center;
+    text-decoration: none;
+    cursor: default;
+    box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff,
+                inset -2px -2px #808080, inset 2px 2px #dfdfdf;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .btn98:active {
+    padding: 7px 15px 5px 17px;
+    box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a,
+                inset -2px -2px #dfdfdf, inset 2px 2px #808080;
+  }
+  .btn98:focus-visible { outline: 1px dotted #000; outline-offset: -5px; }
+
+  /* ---------- Liquid glass lens that follows the mouse ---------- */
+  #lens, .blob {
+    position: fixed; left: 0; top: 0;
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 9997;
+    opacity: 0;
+    transition: opacity .2s;
+    will-change: transform;
+    /* fallback (Firefox/Safari): plain frosted glass */
+    -webkit-backdrop-filter: blur(1.5px) brightness(1.08) saturate(1.4);
+    backdrop-filter: blur(1.5px) brightness(1.08) saturate(1.4);
+    /* Chrome/Edge: real refraction through the SVG displacement filter */
+    backdrop-filter: url(#lens-filter) brightness(1.08) saturate(1.4);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.55),
+      inset 6px 8px 14px rgba(255,255,255,.35),
+      inset -8px -10px 18px rgba(0,0,0,.18),
+      0 10px 24px rgba(0,0,0,.25);
+  }
+  #lens.on, .blob.on { opacity: 1; }
+  /* specular highlight */
+  #lens::after, .blob::after {
+    content: ""; position: absolute; inset: 0; border-radius: 50%;
+    background:
+      radial-gradient(ellipse 45% 28% at 30% 20%, rgba(255,255,255,.75), rgba(255,255,255,0) 70%),
+      radial-gradient(ellipse 40% 20% at 70% 85%, rgba(255,255,255,.3), rgba(255,255,255,0) 70%);
+  }
+  html.lens-off #lens, html.lens-off .blob { display: none; }
+  /* small water-drop clones that trail the main lens */
+  .blob {
+    z-index: 9996;
+    transition: opacity .35s;
+    -webkit-backdrop-filter: blur(1px) brightness(1.1) saturate(1.4);
+    backdrop-filter: blur(1px) brightness(1.1) saturate(1.4);
+    box-shadow:
+      inset 0 0 0 1px rgba(255,255,255,.55),
+      inset 2px 3px 5px rgba(255,255,255,.35),
+      inset -3px -4px 6px rgba(0,0,0,.16),
+      0 3px 8px rgba(0,0,0,.2);
+  }
+  @media (prefers-reduced-motion: reduce) { .blob { display: none; } }
+
+  /* ---------- High contrast dark mode ---------- */
+  html.dark { color-scheme: dark; background: #000; }
+  html.dark body { color: #fff; }
+  html.dark a:not(.btn98) { color: #ffff00; }
+  html.dark a:not(.btn98):visited { color: #ff9cff; }
+  html.dark hr { border: 0; border-top: 2px solid #fff; background: none; }
+
+  /* ---------- Red flash when right click is blocked ---------- */
+  #lens, .blob { transition-property: opacity, background-color; transition-duration: .2s, .15s; }
+  #lens.red, .blob.red { background-color: rgba(255, 30, 30, .32); }
+
+  /* ---------- CRT effect ---------- */
+  #crt {
+    position: fixed; inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    overflow: hidden;
+    background: repeating-linear-gradient(to bottom,
+      rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px,
+      rgba(0,0,0,.14) 3px, rgba(0,0,0,.14) 4px);
+    animation: flicker .12s infinite;
+  }
+  /* vignette */
+  #crt::before {
+    content: ""; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 55%, rgba(0,0,0,.35) 100%);
+  }
+  /* slow rolling bright band */
+  #crt::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 0; height: 140px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,.07), rgba(255,255,255,0));
+    animation: roll 7s linear infinite;
+  }
+  @keyframes roll { from { transform: translateY(-140px); } to { transform: translateY(100vh); } }
+  @keyframes flicker { 0% { opacity: .97; } 50% { opacity: 1; } 100% { opacity: .98; } }
+  html:not(.crt-off) body { text-shadow: 1px 0 rgba(255,0,0,.18), -1px 0 rgba(0,0,255,.18); }
+  html.crt-off #crt { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    #crt, #crt::after { animation: none; }
+  }
 </style>
+<script>
+try { if (localStorage.getItem('dark') === '1') document.documentElement.classList.add('dark'); } catch (e) {}
+</script>
 </head>
 <body>
 
-<h1>Abraham</h1>
-<p><i>Programmer. Welcome to my home page.</i></p>
+<div class="buttons">
+  <button type="button" class="btn98" id="dark-toggle">Dark mode: off</button>
+</div>
+
+<h1>Welcome to my corner of the web! I'm Abraham</h1>
+<p><i>Programmer. Glad you stopped by, pull up a chair and look around.</i></p>
+
+<div class="buttons">
+  <a class="btn98" href="https://github.com/abraham-ny">GitHub</a>
+  <a class="btn98" href="https://youtube.com/@crossmediabar">YouTube</a>
+  <a class="btn98" href="lfeedback.html">Send me a message</a>
+</div>
 
 <hr>
 
@@ -83,6 +209,271 @@ I make music in FL Studio. Label: Associated Music Group (made up).
 <hr>
 
 <p><small>Last updated: 2026. Best viewed in any browser.</small></p>
+
+<div class="buttons">
+  <button type="button" class="btn98" id="crt-toggle">CRT: on</button>
+  <button type="button" class="btn98" id="lens-toggle">Lens: on</button>
+</div>
+
+<!-- liquid glass lens + CRT overlay -->
+<div id="lens"></div>
+<div id="crt"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="lens-filter" x="0" y="0" width="100%" height="100%"
+          primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+    <feImage id="lens-map" x="0" y="0" width="110" height="110" result="map" preserveAspectRatio="none"/>
+    <feDisplacementMap in="SourceGraphic" in2="map" scale="48"
+                       xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<script>
+(function () {
+  var root = document.documentElement;
+
+  // toggles
+  function wire(id, cls, label) {
+    var b = document.getElementById(id);
+    b.addEventListener('click', function () {
+      var off = root.classList.toggle(cls);
+      b.textContent = label + ': ' + (off ? 'off' : 'on');
+    });
+  }
+  var dbtn = document.getElementById('dark-toggle');
+  function showDark() { dbtn.textContent = 'Dark mode: ' + (root.classList.contains('dark') ? 'on' : 'off'); }
+  showDark();
+  dbtn.addEventListener('click', function () {
+    var on = root.classList.toggle('dark');
+    showDark();
+    try { localStorage.setItem('dark', on ? '1' : '0'); } catch (e) {}
+  });
+  wire('crt-toggle', 'crt-off', 'CRT');
+  wire('lens-toggle', 'lens-off', 'Lens');
+
+  // lens
+  var lens = document.getElementById('lens');
+
+  var SIZE = 110, H = SIZE / 2;
+
+  // build the displacement map: red = x shift, green = y shift (128 = no shift).
+  // Shift grows toward the rim, pulling content inward so the edge bends like a water drop.
+  var c = document.createElement('canvas');
+  c.width = c.height = SIZE;
+  var ctx = c.getContext('2d');
+  var img = ctx.createImageData(SIZE, SIZE);
+  for (var y = 0; y < SIZE; y++) {
+    for (var x = 0; x < SIZE; x++) {
+      var dx = (x + 0.5 - H) / H, dy = (y + 0.5 - H) / H;
+      var r = Math.sqrt(dx * dx + dy * dy);
+      var vx = 0, vy = 0;
+      if (r > 0 && r < 1) {
+        var f = Math.pow(r, 3);
+        vx = -(dx / r) * f;
+        vy = -(dy / r) * f;
+      }
+      var i = (y * SIZE + x) * 4;
+      img.data[i]     = Math.round(127.5 + 127.5 * vx);
+      img.data[i + 1] = Math.round(127.5 + 127.5 * vy);
+      img.data[i + 2] = 128;
+      img.data[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  var url = c.toDataURL();
+  var map = document.getElementById('lens-map');
+  map.setAttribute('href', url);
+  map.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', url);
+
+  var tx = -999, ty = -999, px = tx, py = ty, lvx = 0, lvy = 0;
+  var smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---- liquid clones: small lenses on springs with wandering targets ----
+  var NS = 'http://www.w3.org/2000/svg';
+  var XL = 'http://www.w3.org/1999/xlink';
+  var svg = document.querySelector('svg');
+  var crt = document.getElementById('crt');
+  var blobs = [];
+  function rnd(a, b) { return a + Math.random() * (b - a); }
+
+  if (smooth) {
+    var sizes = [46, 34, 24];
+    for (var n = 0; n < sizes.length; n++) {
+      var size = Math.round(sizes[n] + rnd(-4, 4));
+      var fid = 'blob-filter-' + n;
+
+      // each clone gets its own refraction filter sized to match
+      var f = document.createElementNS(NS, 'filter');
+      f.setAttribute('id', fid);
+      f.setAttribute('x', '0'); f.setAttribute('y', '0');
+      f.setAttribute('width', '100%'); f.setAttribute('height', '100%');
+      f.setAttribute('primitiveUnits', 'userSpaceOnUse');
+      f.setAttribute('color-interpolation-filters', 'sRGB');
+      var fi = document.createElementNS(NS, 'feImage');
+      fi.setAttribute('x', '0'); fi.setAttribute('y', '0');
+      fi.setAttribute('width', size); fi.setAttribute('height', size);
+      fi.setAttribute('preserveAspectRatio', 'none');
+      fi.setAttribute('result', 'map');
+      fi.setAttribute('href', url);
+      fi.setAttributeNS(XL, 'xlink:href', url);
+      var fd = document.createElementNS(NS, 'feDisplacementMap');
+      fd.setAttribute('in', 'SourceGraphic');
+      fd.setAttribute('in2', 'map');
+      fd.setAttribute('scale', (size * 0.43).toFixed(1));
+      fd.setAttribute('xChannelSelector', 'R');
+      fd.setAttribute('yChannelSelector', 'G');
+      f.appendChild(fi); f.appendChild(fd);
+      svg.appendChild(f);
+
+      var el = document.createElement('div');
+      el.className = 'blob';
+      el.style.width = el.style.height = size + 'px';
+      el.style.transitionDelay = (n * 70) + 'ms';
+      el.style.backdropFilter = 'url(#' + fid + ') brightness(1.1) saturate(1.4)';
+      document.body.insertBefore(el, crt);
+
+      var zeta = rnd(0.3, 0.55);                // < 1 means it overshoots and jiggles
+      var stiff = rnd(40, 90);
+      blobs.push({
+        el: el, size: size, x: 0, y: 0, vx: 0, vy: 0,
+        k: stiff, c: 2 * zeta * Math.sqrt(stiff),
+        a0: rnd(0, 6.283), sp: rnd(0.25, 0.7) * (Math.random() < 0.5 ? -1 : 1),
+        r0: 55 + size / 2 + rnd(8, 26), ra: rnd(8, 20),
+        w1: rnd(0.4, 1.1), p1: rnd(0, 6.283),
+        w2: rnd(0.5, 1.3), p2: rnd(0, 6.283),
+        w3: rnd(1.5, 3), p3: rnd(0, 6.283),
+        lag: rnd(0.06, 0.2)
+      });
+    }
+  }
+
+  function showBlobs() {
+    for (var i = 0; i < blobs.length; i++) {
+      var b = blobs[i];
+      b.x = px + rnd(-6, 6); b.y = py + rnd(-6, 6);
+      b.vx = rnd(-120, 120); b.vy = rnd(-120, 120);   // pop out of the lens
+      b.el.classList.add('on');
+    }
+  }
+
+  var running = false, last = 0, idle = 0;
+  function frame(now) {
+    var dt = Math.min((now - last) / 1000 || 0.016, 0.05);
+    last = now;
+
+    // main lens: smooth follow, and track its velocity
+    var ox = px, oy = py;
+    var a = smooth ? 1 - Math.pow(0.75, dt * 60) : 1;
+    px += (tx - px) * a;
+    py += (ty - py) * a;
+    lens.style.transform = 'translate(' + (px - H) + 'px,' + (py - H) + 'px)';
+    if (dt > 0) {
+      lvx += ((px - ox) / dt - lvx) * 0.15;
+      lvy += ((py - oy) / dt - lvy) * 0.15;
+    }
+
+    // clones
+    var t = now / 1000, i, j, b, c;
+    for (i = 0; i < blobs.length; i++) {
+      b = blobs[i];
+      // wandering target: a slowly drifting orbit around the lens, pulled back by its motion
+      var ang = b.a0 + t * b.sp + Math.sin(t * b.w1 + b.p1) * 1.2;
+      var rad = b.r0 + Math.sin(t * b.w2 + b.p2) * b.ra;
+      var gx = px + Math.cos(ang) * rad - lvx * b.lag;
+      var gy = py + Math.sin(ang) * rad - lvy * b.lag;
+      b.vx += (b.k * (gx - b.x) - b.c * b.vx) * dt;
+      b.vy += (b.k * (gy - b.y) - b.c * b.vy) * dt;
+    }
+    // clones push each other apart a little so they behave like separate blobs
+    for (i = 0; i < blobs.length; i++) {
+      for (j = i + 1; j < blobs.length; j++) {
+        b = blobs[i]; c = blobs[j];
+        var dx = c.x - b.x, dy = c.y - b.y, d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+        var min = (b.size + c.size) / 2 + 8;
+        if (d < min) {
+          var push = (min - d) * 40 * dt;
+          b.vx -= dx / d * push; b.vy -= dy / d * push;
+          c.vx += dx / d * push; c.vy += dy / d * push;
+        }
+      }
+    }
+    for (i = 0; i < blobs.length; i++) {
+      b = blobs[i];
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      // stretch along the direction of travel, plus a slow breathing wobble
+      var speed = Math.sqrt(b.vx * b.vx + b.vy * b.vy);
+      var st = 1 + Math.min(speed / 1800, 0.45);
+      var wob = 1 + 0.06 * Math.sin(t * b.w3 + b.p3);
+      b.el.style.transform = 'translate(' + (b.x - b.size / 2) + 'px,' + (b.y - b.size / 2) + 'px)' +
+        ' rotate(' + Math.atan2(b.vy, b.vx) + 'rad) scale(' + (st * wob) + ',' + (wob / st) + ')';
+    }
+
+    if (lens.classList.contains('on') || ++idle < 60) {
+      requestAnimationFrame(frame);
+    } else {
+      running = false;
+    }
+  }
+  function start() {
+    if (!running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
+  }
+
+  var lastTouch = 0;
+  function move(x, y) {
+    if (root.classList.contains('lens-off')) return;
+    if (!lens.classList.contains('on')) { px = x; py = y; lvx = lvy = 0; showBlobs(); }
+    tx = x; ty = y;
+    lens.classList.add('on');
+    idle = 0;
+    start();
+  }
+  function onTouch(e) {
+    lastTouch = Date.now();
+    var t = e.touches[0];
+    if (t) move(t.clientX, t.clientY - 70); // drawn above the finger so it isn't covered
+  }
+  function hide() {
+    lens.classList.remove('on');
+    for (var i = 0; i < blobs.length; i++) blobs[i].el.classList.remove('on');
+    idle = 0;
+    start();
+  }
+  document.addEventListener('mousemove', function (e) {
+    if (Date.now() - lastTouch > 500) move(e.clientX, e.clientY); // ignore mouse events faked by a tap
+  });
+  document.addEventListener('mouseleave', hide);
+  document.addEventListener('touchstart', onTouch, { passive: true });
+  document.addEventListener('touchmove', onTouch, { passive: true });
+  document.addEventListener('touchend', hide);
+  document.addEventListener('touchcancel', hide);
+
+  // block the right-click menu (and touch long-press menu); flash the lens red
+  var redTimer;
+  function flashRed() {
+    lens.classList.add('red');
+    for (var i = 0; i < blobs.length; i++) blobs[i].el.classList.add('red');
+    clearTimeout(redTimer);
+    redTimer = setTimeout(function () {
+      lens.classList.remove('red');
+      for (var i = 0; i < blobs.length; i++) blobs[i].el.classList.remove('red');
+    }, 600);
+  }
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); flashRed(); });
+
+  // block F12 and the usual devtools / view-source shortcuts (this is only a speed bump)
+  document.addEventListener('keydown', function (e) {
+    var mod = e.ctrlKey || e.metaKey;
+    var tool = e.code === 'KeyI' || e.code === 'KeyJ' || e.code === 'KeyC';
+    if (e.code === 'F12' || e.keyCode === 123 ||
+        (mod && e.shiftKey && tool) ||
+        (e.metaKey && e.altKey && tool) ||
+        (mod && e.code === 'KeyU')) {
+      e.preventDefault();
+    }
+  });
+})();
+</script>
 
 </body>
 </html>
